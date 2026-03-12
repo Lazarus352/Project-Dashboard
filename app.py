@@ -115,6 +115,7 @@ html, body { font-size: var(--f11) !important; }
 .stDeployButton { display: none !important; }
 [data-testid="stDecoration"] { display: none !important; }
 
+
 /* ══ SIDEBAR ══════════════════════════════════════════════════════════════ */
 section[data-testid="stSidebar"] {
   background: var(--bg) !important;
@@ -260,21 +261,6 @@ div[data-testid="stRadio"] > label { display: none !important; }
 }
 .stButton > button:hover { background: var(--green-dark) !important; }
 
-/* ══ NEWS CARDS ═══════════════════════════════════════════════════════════ */
-.news-card {
-  border-left: 2px solid var(--border2);
-  padding: 0.4rem 0.6rem; margin-bottom: 0.35rem;
-  background: var(--bg1);
-}
-.news-card:hover { border-left-color: var(--green); }
-.news-headline { font-size: var(--f11); font-weight: 400; color: var(--text-body); line-height: 1.4; }
-.news-meta { font-size: var(--f9); color: var(--text-dim); margin-top: 0.15rem; letter-spacing: 0.04em; }
-.news-tag {
-  display: inline-block; font-size: var(--f8); font-weight: 500;
-  padding: 0.03rem 0.3rem; border: 1px solid var(--border2);
-  color: var(--text-dim); letter-spacing: 0.08em;
-  text-transform: uppercase; margin-right: 0.25rem;
-}
 
 /* ══ WATCHLIST ════════════════════════════════════════════════════════════ */
 .wl-row {
@@ -332,7 +318,50 @@ div[data-testid="stRadio"] > label { display: none !important; }
 .stNumberInput > div { border-radius: 0 !important; }
 .stNumberInput label { font-size: var(--f9) !important; color: var(--text-dim) !important; text-transform: uppercase !important; }
 .streamlit-expanderHeader { font-size: var(--f10) !important; }
-[data-testid="stDecoration"] { display: none !important; }
+
+/* ══ NEWS CARD — clickable headlines ════════════════════════════════════════ */
+.news-card {
+  padding: 0.5rem 0.65rem 0.45rem;
+  border-bottom: 1px solid #111;
+  background: #000;
+}
+.news-card:hover { background: #080808; }
+.news-link {
+  display: block;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #dddddd !important;
+  text-decoration: none !important;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+.news-link:hover {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+.news-source {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: #00ff41 !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.news-age {
+  font-size: 9px !important;
+  color: #444 !important;
+}
+.news-tag {
+  display: inline-block;
+  font-size: 8px !important;
+  font-weight: 600 !important;
+  padding: 0.02rem 0.28rem;
+  border: 1px solid #222;
+  color: #555 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 
 /* ══ FORCE WHITE + BOLD ON CUSTOM QUOTE/WATCHLIST SPANS ═══════════════════
    Streamlit's catch-all [class*="st-"] span rule fires with !important and
@@ -678,48 +707,72 @@ def get_volatility_table() -> pd.DataFrame:
     })
 
 # ══════════════════════════════════════════════════════════════════════════════
-# NEWS — Live RSS feeds + AI summaries
+# NEWS — Live RSS feeds, auto-refreshed every 10 minutes via feedparser cache
 # ══════════════════════════════════════════════════════════════════════════════
-
-# RSS feeds mapped to each section (public, no-auth feeds)
+# Source availability:
+#  ✓ Reuters, MarketWatch, Yahoo Finance, Investing.com, Mining.com,
+#    CoinDesk, Decrypt, CryptoSlate, Kitco, FXStreet — free public RSS
+#  ✗ Bloomberg, AFR, CRU, CNBC, SeekingAlpha — no free public RSS feeds;
+#    these require paid API access or subscriptions and cannot be polled
 NEWS_FEEDS = {
-    "EQUITIES":    [
-        ("Reuters Markets",    "https://feeds.reuters.com/reuters/businessNews"),
-        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
-        ("MarketWatch",        "https://feeds.marketwatch.com/marketwatch/topstories/"),
+    "EQUITIES": [
+        ("Reuters",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
+        ("Yahoo Finance",   "https://finance.yahoo.com/news/rssindex"),
+        ("Investing.com",   "https://www.investing.com/rss/news_25.rss"),
+        ("Seeking Alpha",   "https://seekingalpha.com/feed.xml"),
     ],
-    "CREDIT":      [
-        ("Reuters Business",   "https://feeds.reuters.com/reuters/businessNews"),
-        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    "CREDIT": [
+        ("Reuters",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
+        ("Investing.com",   "https://www.investing.com/rss/news_25.rss"),
+        ("Yahoo Finance",   "https://finance.yahoo.com/news/rssindex"),
     ],
-    "RATES":       [
-        ("Reuters Markets",    "https://feeds.reuters.com/reuters/businessNews"),
-        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    "RATES": [
+        ("Reuters",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
+        ("Investing.com",   "https://www.investing.com/rss/news_2.rss"),
+        ("Yahoo Finance",   "https://finance.yahoo.com/news/rssindex"),
     ],
-    "FX":          [
-        ("Reuters FX",         "https://feeds.reuters.com/reuters/businessNews"),
-        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    "FX": [
+        ("Reuters",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("FXStreet",        "https://www.fxstreet.com/rss/news"),
+        ("Investing.com",   "https://www.investing.com/rss/news_1.rss"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
     ],
     "COMMODITIES": [
-        ("Reuters Commodities","https://feeds.reuters.com/reuters/businessNews"),
-        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+        ("Reuters",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("Mining.com",      "https://www.mining.com/feed/"),
+        ("Kitco",           "https://www.kitco.com/rss/kitconews.rss"),
+        ("Investing.com",   "https://www.investing.com/rss/news_11.rss"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
+        ("Yahoo Finance",   "https://finance.yahoo.com/news/rssindex"),
     ],
-    "CRYPTO":      [
-        ("CoinDesk",           "https://www.coindesk.com/arc/outboundfeeds/rss/"),
-        ("CryptoSlate",        "https://cryptoslate.com/feed/"),
-        ("Decrypt",            "https://decrypt.co/feed"),
+    "CRYPTO": [
+        ("CoinDesk",        "https://www.coindesk.com/arc/outboundfeeds/rss/"),
+        ("Decrypt",         "https://decrypt.co/feed"),
+        ("CryptoSlate",     "https://cryptoslate.com/feed/"),
+        ("Investing.com",   "https://www.investing.com/rss/news_301.rss"),
     ],
-    "ECONOMY":     [
-        ("Reuters Economy",    "https://feeds.reuters.com/reuters/businessNews"),
-        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    "ECONOMY": [
+        ("Reuters",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
+        ("Investing.com",   "https://www.investing.com/rss/news_14.rss"),
+        ("Yahoo Finance",   "https://finance.yahoo.com/news/rssindex"),
+        ("Seeking Alpha",   "https://seekingalpha.com/feed.xml"),
     ],
     "GEOPOLITICS": [
-        ("Reuters World",      "https://feeds.reuters.com/Reuters/worldNews"),
-        ("Reuters Politics",   "https://feeds.reuters.com/Reuters/politicsNews"),
+        ("Reuters World",   "https://feeds.reuters.com/Reuters/worldNews"),
+        ("Reuters Pol.",    "https://feeds.reuters.com/Reuters/politicsNews"),
+        ("Reuters Biz.",    "https://feeds.reuters.com/reuters/businessNews"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
     ],
-    "FUNDS":       [
-        ("Reuters Business",   "https://feeds.reuters.com/reuters/businessNews"),
-        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    "FUNDS": [
+        ("Reuters",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("MarketWatch",     "https://feeds.marketwatch.com/marketwatch/topstories/"),
+        ("Investing.com",   "https://www.investing.com/rss/news_25.rss"),
+        ("Yahoo Finance",   "https://finance.yahoo.com/news/rssindex"),
+        ("Seeking Alpha",   "https://seekingalpha.com/feed.xml"),
     ],
 }
 
@@ -835,41 +888,6 @@ def fetch_live_news(section: str) -> list:
 
     return results
 
-
-def summarise_article(title: str, url: str) -> str:
-    """
-    Calls Anthropic API to generate a 1-2 sentence market-focused summary.
-    Returns the summary string, or an error message.
-    """
-    try:
-        import urllib.request, urllib.error
-        prompt = (
-            f"You are a financial news summariser for a professional market terminal. "
-            f"Write exactly 1-2 concise sentences summarising this article for a trader/investor audience. "
-            f"Focus on market impact, numbers, and actionable context. Be factual and direct.\n\n"
-            f"Article title: {title}\n"
-            f"Article URL: {url}\n\n"
-            f"Summary (1-2 sentences only, no preamble):"
-        )
-        payload = _json.dumps({
-            "model": "claude-sonnet-4-20250514",
-            "max_tokens": 120,
-            "messages": [{"role": "user", "content": prompt}]
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
-            data=payload,
-            headers={
-                "content-type":      "application/json",
-                "anthropic-version": "2023-06-01",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            data = _json.loads(resp.read())
-        return data["content"][0]["text"].strip()
-    except Exception as e:
-        return f"Summary unavailable ({type(e).__name__})."
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1184,74 +1202,28 @@ def render_section(section_name: str, default_tickers: list):
     # ── NEWS ──────────────────────────────────────────────────────────────────
     with sub_tabs[4]:
         st.markdown('<div class="bb-section">LATEST HEADLINES</div>', unsafe_allow_html=True)
-
-        # Fetch button + live feed
-        col_nr, col_nb = st.columns([5, 1])
-        with col_nb:
-            if st.button("↺ REFRESH", key=f"news_refresh_{section_name}"):
-                fetch_live_news.clear()
-                st.rerun()
-
-        with st.spinner("Loading news…"):
+        with st.spinner(""):
             news_items = fetch_live_news(section_name)
-
         if not news_items:
-            st.info("No articles found. Try refreshing.")
+            st.info("No articles found for this section.")
         else:
-            # Session state key for summaries cache
-            sum_key = f"summaries_{section_name}"
-            if sum_key not in st.session_state:
-                st.session_state[sum_key] = {}
-
-            for idx, article in enumerate(news_items):
+            for article in news_items:
                 title  = article["title"]
                 url    = article["url"]
                 source = article["source"]
                 age    = article["age"]
                 tags   = article["tags"]
-
-                tags_html = "".join(
-                    f'<span class="news-tag">{t}</span>' for t in tags
-                )
-
-                # Card HTML
+                tags_html = "".join(f'<span class="news-tag">{t}</span>' for t in tags)
                 st.markdown(
-                    f'<div class="news-card" style="margin-bottom:0;">'
-                    f'<div class="news-headline" style="color:#cccccc!important;font-weight:500!important;">{title}</div>'
-                    f'<div class="news-meta" style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem;">'
+                    f'<div class="news-card">'
+                    f'<a href="{url}" target="_blank" class="news-link">{title}</a>'
+                    f'<div class="news-meta" style="display:flex;align-items:center;gap:0.45rem;margin-top:0.22rem;">'
                     f'{tags_html}'
-                    f'<span style="color:#555;font-size:9px;font-weight:600!important;">{source}</span>'
-                    f'<span style="color:#333;font-size:9px;">· {age} ago</span>'
+                    f'<span class="news-source">{source}</span>'
+                    f'<span class="news-age">· {age} ago</span>'
                     f'</div></div>',
                     unsafe_allow_html=True,
                 )
-
-                # Expand button — generates AI summary on click
-                art_id = f"news_{section_name}_{idx}"
-                btn_label = "▾ summary" if art_id not in st.session_state[sum_key] else "▴ hide"
-                if st.button(btn_label, key=f"btn_{art_id}"):
-                    if art_id in st.session_state[sum_key]:
-                        del st.session_state[sum_key][art_id]
-                    else:
-                        with st.spinner("Summarising…"):
-                            st.session_state[sum_key][art_id] = summarise_article(title, url)
-                    st.rerun()
-
-                # Show summary if fetched
-                if art_id in st.session_state[sum_key]:
-                    summary = st.session_state[sum_key][art_id]
-                    st.markdown(
-                        f'<div style="background:#0a0a0a;border-left:2px solid #00ff41;'
-                        f'padding:0.4rem 0.65rem;margin:0.1rem 0 0.1rem 0;">'
-                        f'<div style="font-size:11px;color:#cccccc!important;font-weight:400;line-height:1.55;">{summary}</div>'
-                        f'<a href="{url}" target="_blank" style="font-size:9px;color:#00ff41!important;'
-                        f'font-weight:600;text-decoration:none;letter-spacing:0.08em;display:inline-block;margin-top:0.3rem;">'
-                        f'READ FULL ARTICLE →</a>'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                st.markdown('<div style="border-bottom:1px solid #111;margin:0.1rem 0 0.35rem;"></div>', unsafe_allow_html=True)
 
     # ── FORMULAS ──────────────────────────────────────────────────────────────
     with sub_tabs[5]:
@@ -1504,48 +1476,28 @@ with tabs[2]:  # RATES
         st.dataframe(fomc_data, use_container_width=True, hide_index=True)
 
     with rates_tabs[4]:
-        with st.spinner("Loading news…"):
+        with st.spinner(""):
             news_items = fetch_live_news("RATES")
-        col_nr2, col_nb2 = st.columns([5, 1])
-        with col_nb2:
-            if st.button("↺ REFRESH", key="news_refresh_rates_standalone"):
-                fetch_live_news.clear()
-                st.rerun()
-        sum_key2 = "summaries_rates_standalone"
-        if sum_key2 not in st.session_state:
-            st.session_state[sum_key2] = {}
-        for idx2, article2 in enumerate(news_items):
-            title2  = article2["title"]; url2 = article2["url"]
-            source2 = article2["source"]; age2 = article2["age"]; tags2 = article2["tags"]
-            tags_html2 = "".join(f'<span class="news-tag">{t}</span>' for t in tags2)
-            st.markdown(
-                f'<div class="news-card" style="margin-bottom:0;">' +
-                f'<div class="news-headline" style="color:#cccccc!important;font-weight:500!important;">{title2}</div>' +
-                f'<div class="news-meta" style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem;">' +
-                f'{tags_html2}<span style="color:#555;font-size:9px;font-weight:600!important;">{source2}</span>' +
-                f'<span style="color:#333;font-size:9px;">· {age2} ago</span></div></div>',
-                unsafe_allow_html=True,
-            )
-            art_id2 = f"news_rates_standalone_{idx2}"
-            btn_lbl2 = "▾ summary" if art_id2 not in st.session_state[sum_key2] else "▴ hide"
-            if st.button(btn_lbl2, key=f"btn_{art_id2}"):
-                if art_id2 in st.session_state[sum_key2]:
-                    del st.session_state[sum_key2][art_id2]
-                else:
-                    with st.spinner("Summarising…"):
-                        st.session_state[sum_key2][art_id2] = summarise_article(title2, url2)
-                st.rerun()
-            if art_id2 in st.session_state[sum_key2]:
-                summary2 = st.session_state[sum_key2][art_id2]
+        if not news_items:
+            st.info("No articles found.")
+        else:
+            for article in news_items:
+                title  = article["title"]
+                url    = article["url"]
+                source = article["source"]
+                age    = article["age"]
+                tags   = article["tags"]
+                tags_html = "".join(f'<span class="news-tag">{t}</span>' for t in tags)
                 st.markdown(
-                    f'<div style="background:#0a0a0a;border-left:2px solid #00ff41;padding:0.4rem 0.65rem;margin:0.1rem 0;">' +
-                    f'<div style="font-size:11px;color:#cccccc!important;line-height:1.55;">{summary2}</div>' +
-                    f'<a href="{url2}" target="_blank" style="font-size:9px;color:#00ff41!important;font-weight:600;' +
-                    f'text-decoration:none;letter-spacing:0.08em;display:inline-block;margin-top:0.3rem;">READ FULL ARTICLE →</a></div>',
+                    f'<div class="news-card">'
+                    f'<a href="{url}" target="_blank" class="news-link">{title}</a>'
+                    f'<div class="news-meta" style="display:flex;align-items:center;gap:0.45rem;margin-top:0.22rem;">'
+                    f'{tags_html}'
+                    f'<span class="news-source">{source}</span>'
+                    f'<span class="news-age">· {age} ago</span>'
+                    f'</div></div>',
                     unsafe_allow_html=True,
                 )
-            st.markdown('<div style="border-bottom:1px solid #111;margin:0.1rem 0 0.35rem;"></div>', unsafe_allow_html=True)
-
     with rates_tabs[5]:
         st.info("See FORMULAS tab in any section's sub-navigation.")
 
@@ -1731,48 +1683,28 @@ with tabs[8]:  # GEOPOLITICS
                      use_container_width=True, hide_index=True)
 
     with geo_tabs[3]:
-        with st.spinner("Loading news…"):
+        with st.spinner(""):
             news_items = fetch_live_news("GEOPOLITICS")
-        col_nr2, col_nb2 = st.columns([5, 1])
-        with col_nb2:
-            if st.button("↺ REFRESH", key="news_refresh_geo_standalone"):
-                fetch_live_news.clear()
-                st.rerun()
-        sum_key2 = "summaries_geo_standalone"
-        if sum_key2 not in st.session_state:
-            st.session_state[sum_key2] = {}
-        for idx2, article2 in enumerate(news_items):
-            title2  = article2["title"]; url2 = article2["url"]
-            source2 = article2["source"]; age2 = article2["age"]; tags2 = article2["tags"]
-            tags_html2 = "".join(f'<span class="news-tag">{t}</span>' for t in tags2)
-            st.markdown(
-                f'<div class="news-card" style="margin-bottom:0;">' +
-                f'<div class="news-headline" style="color:#cccccc!important;font-weight:500!important;">{title2}</div>' +
-                f'<div class="news-meta" style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem;">' +
-                f'{tags_html2}<span style="color:#555;font-size:9px;font-weight:600!important;">{source2}</span>' +
-                f'<span style="color:#333;font-size:9px;">· {age2} ago</span></div></div>',
-                unsafe_allow_html=True,
-            )
-            art_id2 = f"news_geo_standalone_{idx2}"
-            btn_lbl2 = "▾ summary" if art_id2 not in st.session_state[sum_key2] else "▴ hide"
-            if st.button(btn_lbl2, key=f"btn_{art_id2}"):
-                if art_id2 in st.session_state[sum_key2]:
-                    del st.session_state[sum_key2][art_id2]
-                else:
-                    with st.spinner("Summarising…"):
-                        st.session_state[sum_key2][art_id2] = summarise_article(title2, url2)
-                st.rerun()
-            if art_id2 in st.session_state[sum_key2]:
-                summary2 = st.session_state[sum_key2][art_id2]
+        if not news_items:
+            st.info("No articles found.")
+        else:
+            for article in news_items:
+                title  = article["title"]
+                url    = article["url"]
+                source = article["source"]
+                age    = article["age"]
+                tags   = article["tags"]
+                tags_html = "".join(f'<span class="news-tag">{t}</span>' for t in tags)
                 st.markdown(
-                    f'<div style="background:#0a0a0a;border-left:2px solid #00ff41;padding:0.4rem 0.65rem;margin:0.1rem 0;">' +
-                    f'<div style="font-size:11px;color:#cccccc!important;line-height:1.55;">{summary2}</div>' +
-                    f'<a href="{url2}" target="_blank" style="font-size:9px;color:#00ff41!important;font-weight:600;' +
-                    f'text-decoration:none;letter-spacing:0.08em;display:inline-block;margin-top:0.3rem;">READ FULL ARTICLE →</a></div>',
+                    f'<div class="news-card">'
+                    f'<a href="{url}" target="_blank" class="news-link">{title}</a>'
+                    f'<div class="news-meta" style="display:flex;align-items:center;gap:0.45rem;margin-top:0.22rem;">'
+                    f'{tags_html}'
+                    f'<span class="news-source">{source}</span>'
+                    f'<span class="news-age">· {age} ago</span>'
+                    f'</div></div>',
                     unsafe_allow_html=True,
                 )
-            st.markdown('<div style="border-bottom:1px solid #111;margin:0.1rem 0 0.35rem;"></div>', unsafe_allow_html=True)
-
 # ══════════════════════════════════════════════════════════════════════════════
 # CHAT ASSISTANT — bottom panel (always visible)
 # ══════════════════════════════════════════════════════════════════════════════
