@@ -744,7 +744,7 @@ with tab6:
 
         if pdf_text and any(w in q_lower for w in ["pdf","document","uploaded"]):
             snippet = pdf_text[:500].replace("\n"," ")
-            return f"Uploaded document preview:\n"{snippet}…""
+            return f"Uploaded document preview:\n{snippet}..."
 
         # Fallback: show quick stats
         return (f"I can answer questions about the data. Quick summary:\n"
