@@ -316,6 +316,43 @@ div[data-testid="stRadio"] > label { display: none !important; }
 .stNumberInput label { font-size: var(--f9) !important; color: var(--text-dim) !important; text-transform: uppercase !important; }
 .streamlit-expanderHeader { font-size: var(--f10) !important; }
 [data-testid="stDecoration"] { display: none !important; }
+
+/* ══ FORCE WHITE + BOLD ON CUSTOM QUOTE/WATCHLIST SPANS ═══════════════════
+   Streamlit's catch-all [class*="st-"] span rule fires with !important and
+   overrides inline styles. We counter it here with higher specificity.     */
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#ffffff"],
+.stTabs [data-baseweb="tab-panel"] span[style*="color: #ffffff"],
+section[data-testid="stSidebar"] span[style*="color:#ffffff"],
+section[data-testid="stSidebar"] span[style*="color: #ffffff"] {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#ffb700"],
+.stTabs [data-baseweb="tab-panel"] span[style*="color: #ffb700"],
+section[data-testid="stSidebar"] span[style*="color:#ffb700"] {
+  color: #ffb700 !important;
+  font-weight: 700 !important;
+}
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#00ff41"],
+section[data-testid="stSidebar"] span[style*="color:#00ff41"] {
+  color: #00ff41 !important;
+  font-weight: 600 !important;
+}
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#ff3b3b"],
+section[data-testid="stSidebar"] span[style*="color:#ff3b3b"] {
+  color: #ff3b3b !important;
+  font-weight: 600 !important;
+}
+/* Quote strip container divs */
+.stTabs [data-baseweb="tab-panel"] div[style*="border-bottom:1px solid #1e1e1e"] span,
+.stTabs [data-baseweb="tab-panel"] div[style*="border-bottom: 1px solid #1e1e1e"] span {
+  opacity: 1 !important;
+}
+/* Watchlist rows */
+section[data-testid="stSidebar"] div[style*="border-bottom:1px solid #111"] span {
+  opacity: 1 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -727,9 +764,9 @@ with st.sidebar:
         st.markdown(
             f'<div style="display:flex;justify-content:space-between;align-items:center;'
             f'padding:0.28rem 0.3rem;border-bottom:1px solid #111;">'
-            f'<span style="font-size:10px;color:#ffb700;font-weight:600;letter-spacing:0.06em;">{wl_t}</span>'
-            f'<span style="font-size:10px;color:#ffffff;">{price_s}</span>'
-            f'<span style="font-size:9px;color:{chg_col};font-weight:500;">{pct_s}</span>'
+            f'<span style="font-size:10px;color:#ffb700!important;font-weight:700!important;letter-spacing:0.06em;">{wl_t}</span>'
+            f'<span style="font-size:10px;color:#ffffff!important;font-weight:700!important;">{price_s}</span>'
+            f'<span style="font-size:9px;color:{chg_col}!important;font-weight:600!important;">{pct_s}</span>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -770,7 +807,7 @@ with st.sidebar:
             f'<div style="display:flex;justify-content:space-between;'
             f'font-size:9px;padding:0.16rem 0.2rem;border-bottom:1px solid #0d0d0d;">'
             f'<span style="color:#555;">{label}</span>'
-            f'<span style="color:{val_col};font-weight:500;">{val}</span></div>',
+            f'<span style="color:{val_col}!important;font-weight:700!important;">{val}</span></div>',
             unsafe_allow_html=True,
         )
 
@@ -867,9 +904,9 @@ def render_section(section_name: str, default_tickers: list):
             st.markdown(
                 f'<div style="display:flex;align-items:baseline;gap:0.9rem;'
                 f'padding:0.25rem 0.1rem;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">' 
-                f'<span style="font-size:13px;color:#ffb700;font-weight:600;letter-spacing:0.06em;">{ticker}</span>'
-                f'<span style="font-size:18px;color:#ffffff;font-weight:600;">{price:,.4f}</span>'
-                f'<span style="font-size:11px;color:{chg_col};font-weight:500;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
+                f'<span style="font-size:13px;color:#ffb700!important;font-weight:700!important;letter-spacing:0.06em;">{ticker}</span>'
+                f'<span style="font-size:18px;color:#ffffff!important;font-weight:700!important;">{price:,.4f}</span>'
+                f'<span style="font-size:11px;color:{chg_col}!important;font-weight:600!important;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
                 f'<span style="font-size:9px;color:#333;margin-left:auto;">15-min delay · yfinance</span>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -1140,9 +1177,9 @@ with tabs[2]:  # RATES
             st.markdown(
                 f'<div style="display:flex;align-items:baseline;gap:0.9rem;'
                 f'padding:0.25rem 0.1rem;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">'
-                f'<span style="font-size:13px;color:#ffb700;font-weight:600;">{_rt_ticker}</span>'
-                f'<span style="font-size:18px;color:#ffffff;font-weight:600;">{_rp:,.4f}</span>'
-                f'<span style="font-size:11px;color:{_rcol};font-weight:500;">{_rarrow} {_rc:+.4f} ({_rpct:+.2f}%)</span>'
+                f'<span style="font-size:13px;color:#ffb700!important;font-weight:700!important;">{_rt_ticker}</span>'
+                f'<span style="font-size:18px;color:#ffffff!important;font-weight:700!important;">{_rp:,.4f}</span>'
+                f'<span style="font-size:11px;color:{_rcol}!important;font-weight:600!important;">{_rarrow} {_rc:+.4f} ({_rpct:+.2f}%)</span>'
                 f'<span style="font-size:9px;color:#333;margin-left:auto;">15-min delay · yfinance</span>'
                 f'</div>',
                 unsafe_allow_html=True,
