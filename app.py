@@ -28,6 +28,23 @@ try:
 except ImportError:
     HAS_PYPDF2 = False
 
+try:
+    import feedparser
+    HAS_FEEDPARSER = True
+except ImportError:
+    HAS_FEEDPARSER = False
+
+try:
+    import urllib.request
+    import urllib.parse
+    import json as _json
+    HAS_URLLIB = True
+except ImportError:
+    HAS_URLLIB = False
+
+import re as _re
+from datetime import timezone as _tz
+
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE CONFIG
 # ══════════════════════════════════════════════════════════════════════════════
@@ -660,69 +677,200 @@ def get_volatility_table() -> pd.DataFrame:
         "Put/Call":      [0.82, 0.71, 0.95, 0.68, 1.12, 0.59, 0.74, 0.88],
     })
 
-def get_placeholder_news(section: str) -> list:
-    base_news = {
-        "EQUITIES": [
-            ("S&P 500 Touches Record Highs on Tech Surge", "1h", ["MARKETS", "EQUITY"]),
-            ("NVIDIA Reports Blowout Earnings, Raises Guidance", "2h", ["EARNINGS", "TECH"]),
-            ("Fed Officials Signal Patience on Rate Cuts", "3h", ["FED", "MACRO"]),
-            ("Apple Eyes AI Partnership with OpenAI Rival", "4h", ["TECH", "AI"]),
-            ("Buyback Boom: S&P 500 Repurchases Hit $1T Pace", "5h", ["CORPORATE"]),
-            ("Small Caps Lag as Dollar Strength Persists", "6h", ["EQUITY", "FX"]),
-        ],
-        "CREDIT": [
-            ("Investment Grade Spreads Tighten to Post-GFC Lows", "1h", ["CREDIT", "IG"]),
-            ("High Yield Issuance Surges Amid Risk-On Mood", "2h", ["HY", "CREDIT"]),
-            ("CLO Market Sees Record First-Quarter Volume", "3h", ["STRUCTURED"]),
-            ("Emerging Market Debt Attracts $5B in Weekly Flows", "5h", ["EM", "CREDIT"]),
-        ],
-        "RATES": [
-            ("10Y Yield Rises to 4.22% on Strong Jobs Data", "30m", ["RATES", "TREASURY"]),
-            ("Fed's Waller: No Rush to Cut, Inflation Progress Uneven", "1h", ["FED", "RATES"]),
-            ("Treasury Refunding Announcement Raises Supply Fears", "3h", ["SUPPLY", "RATES"]),
-            ("TIPS Breakevens Signal Sticky Inflation Expectations", "4h", ["INFLATION"]),
-        ],
-        "FX": [
-            ("Dollar Index Near 104 as US Exceptionalism Narrative Holds", "1h", ["DXY", "FX"]),
-            ("Yen Weakens Past 150 Again, BOJ Watch Intensifies", "2h", ["JPY", "BOJ"]),
-            ("Euro Tests 1.08 Support Amid Eurozone Growth Fears", "3h", ["EUR", "ECB"]),
-            ("Yuan Hits Weakest Since November on PBOC Flexibility", "5h", ["CNY", "PBOC"]),
-        ],
-        "COMMODITIES": [
-            ("Gold Surges to $2,950/oz on Safe Haven Demand", "1h", ["GOLD", "METALS"]),
-            ("WTI Crude Holds $78 as OPEC+ Cuts Remain in Force", "2h", ["OIL", "OPEC"]),
-            ("Natural Gas Spikes 8% on Cold Snap Forecast", "3h", ["NATGAS", "ENERGY"]),
-            ("Copper Signals Global Demand Pickup, Hits 8-Month High", "4h", ["COPPER", "METALS"]),
-            ("Wheat Retreats as Black Sea Grain Exports Resume", "5h", ["AGRI", "GRAINS"]),
-        ],
-        "CRYPTO": [
-            ("Bitcoin Consolidates at $88,000 After ETF Inflow Surge", "30m", ["BTC", "CRYPTO"]),
-            ("Ethereum Staking Rewards Hit Two-Year High", "2h", ["ETH", "DEFI"]),
-            ("SEC Approves Options on Spot Bitcoin ETFs", "3h", ["REGULATION", "ETF"]),
-            ("Solana Surpasses Ethereum in Daily Active Users", "5h", ["SOL", "LAYER1"]),
-        ],
-        "ECONOMY": [
-            ("March CPI: +2.7% YoY, Core at +2.9%", "2h", ["CPI", "INFLATION"]),
-            ("February NFP: +155K, Rate Holds at 4.1%", "1d", ["JOBS", "MACRO"]),
-            ("Q4 GDP Revised Up to 2.3% Annualized", "2d", ["GDP", "GROWTH"]),
-            ("Consumer Confidence Dips on Tariff Uncertainty", "1d", ["SENTIMENT"]),
-            ("ISM Manufacturing Returns to Expansion Territory", "2d", ["PMI", "INDUSTRY"]),
-        ],
-        "GEOPOLITICS": [
-            ("US-China Trade Talks Stall Over Tech Restrictions", "1h", ["TRADE", "CHINA"]),
-            ("Middle East Tensions Ease; Brent Drops $2", "3h", ["GEOPOLIT", "OIL"]),
-            ("NATO Summit: Defense Spending Pledges Increase", "5h", ["NATO", "DEFENSE"]),
-            ("Russia Energy Exports Rerouted Through Emerging Markets", "1d", ["RUSSIA", "ENERGY"]),
-            ("Taiwan Strait: Navy Exercises Raise Tensions", "1d", ["TAIWAN", "RISK"]),
-        ],
-        "FUNDS": [
-            ("Hedge Funds Reduce Equity Net Long to 6-Month Low", "2h", ["HF", "POSITIONING"]),
-            ("Vanguard Reports Record $1.2T in Annual ETF Flows", "3h", ["ETF", "PASSIVE"]),
-            ("Bridgewater Increases Gold Allocation to 18%", "4h", ["HF", "GOLD"]),
-            ("Private Equity Dry Powder Hits $3.9T as Deals Slow", "5h", ["PE", "CREDIT"]),
-        ],
+# ══════════════════════════════════════════════════════════════════════════════
+# NEWS — Live RSS feeds + AI summaries
+# ══════════════════════════════════════════════════════════════════════════════
+
+# RSS feeds mapped to each section (public, no-auth feeds)
+NEWS_FEEDS = {
+    "EQUITIES":    [
+        ("Reuters Markets",    "https://feeds.reuters.com/reuters/businessNews"),
+        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+        ("MarketWatch",        "https://feeds.marketwatch.com/marketwatch/topstories/"),
+    ],
+    "CREDIT":      [
+        ("Reuters Business",   "https://feeds.reuters.com/reuters/businessNews"),
+        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    ],
+    "RATES":       [
+        ("Reuters Markets",    "https://feeds.reuters.com/reuters/businessNews"),
+        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    ],
+    "FX":          [
+        ("Reuters FX",         "https://feeds.reuters.com/reuters/businessNews"),
+        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    ],
+    "COMMODITIES": [
+        ("Reuters Commodities","https://feeds.reuters.com/reuters/businessNews"),
+        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    ],
+    "CRYPTO":      [
+        ("CoinDesk",           "https://www.coindesk.com/arc/outboundfeeds/rss/"),
+        ("CryptoSlate",        "https://cryptoslate.com/feed/"),
+        ("Decrypt",            "https://decrypt.co/feed"),
+    ],
+    "ECONOMY":     [
+        ("Reuters Economy",    "https://feeds.reuters.com/reuters/businessNews"),
+        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    ],
+    "GEOPOLITICS": [
+        ("Reuters World",      "https://feeds.reuters.com/Reuters/worldNews"),
+        ("Reuters Politics",   "https://feeds.reuters.com/Reuters/politicsNews"),
+    ],
+    "FUNDS":       [
+        ("Reuters Business",   "https://feeds.reuters.com/reuters/businessNews"),
+        ("Yahoo Finance",      "https://finance.yahoo.com/news/rssindex"),
+    ],
+}
+
+# Keyword filters so each section shows relevant articles
+NEWS_KEYWORDS = {
+    "EQUITIES":    ["stock","equity","s&p","nasdaq","dow","earnings","ipo","shares","market","bull","bear","rally","selloff"],
+    "CREDIT":      ["bond","credit","yield","debt","spread","clo","high yield","investment grade","default","lending"],
+    "RATES":       ["rate","yield","treasury","fed","federal reserve","interest","fomc","inflation","monetary"],
+    "FX":          ["dollar","euro","yen","currency","forex","fx","pound","yuan","exchange rate","dxy","central bank"],
+    "COMMODITIES": ["gold","oil","crude","gas","copper","wheat","corn","commodity","silver","energy","metals","opec"],
+    "CRYPTO":      ["bitcoin","crypto","ethereum","blockchain","defi","nft","token","btc","eth","solana","binance","coinbase"],
+    "ECONOMY":     ["gdp","cpi","inflation","jobs","unemployment","payroll","consumer","economic","growth","recession","imf","fed"],
+    "GEOPOLITICS": ["war","sanctions","trade","tariff","geopolit","china","russia","ukraine","middle east","nato","election","policy"],
+    "FUNDS":       ["fund","etf","hedge","vanguard","blackrock","portfolio","asset","institutional","private equity","pension"],
+}
+
+def _parse_age(entry) -> str:
+    """Return human-readable age string from feedparser entry."""
+    try:
+        import time as _time
+        published = entry.get("published_parsed") or entry.get("updated_parsed")
+        if published:
+            age_s = _time.time() - _time.mktime(published)
+            if age_s < 3600:   return f"{int(age_s/60)}m"
+            if age_s < 86400:  return f"{int(age_s/3600)}h"
+            return f"{int(age_s/86400)}d"
+    except Exception:
+        pass
+    return "?"
+
+def _extract_domain(url: str) -> str:
+    try:
+        host = urllib.parse.urlparse(url).netloc
+        return host.replace("www.", "").split(".")[0].upper()
+    except Exception:
+        return "NEWS"
+
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_live_news(section: str) -> list:
+    """
+    Returns list of dicts: {title, url, source, age, tags}
+    Falls back to placeholder headlines if feedparser unavailable or all feeds fail.
+    """
+    FALLBACK = {
+        "EQUITIES":    [("S&P 500 Holds Near Record Highs Amid Rate Uncertainty","https://finance.yahoo.com","Yahoo Finance","2h",["MARKETS"]),("NVIDIA Leads Megacap Rally on AI Demand Optimism","https://finance.yahoo.com","Yahoo Finance","3h",["TECH","AI"])],
+        "CREDIT":      [("IG Spreads Grind Tighter on Strong Demand","https://finance.yahoo.com","Yahoo Finance","1h",["CREDIT","IG"]),("HY Issuance Picks Up as Risk Appetite Returns","https://finance.yahoo.com","Yahoo Finance","4h",["HY"])],
+        "RATES":       [("10Y Treasury Yield Edges Higher After Strong Retail Data","https://finance.yahoo.com","Yahoo Finance","1h",["RATES"]),("Fed Officials Reiterate Data-Dependent Stance","https://finance.yahoo.com","Yahoo Finance","3h",["FED"])],
+        "FX":          [("Dollar Index Holds Near 104 as US Data Beats","https://finance.yahoo.com","Yahoo Finance","1h",["DXY","FX"]),("Yen Weakness Persists; BOJ Intervention Risk Rises","https://finance.yahoo.com","Yahoo Finance","2h",["JPY"])],
+        "COMMODITIES": [("Gold Near Record Highs on Safe-Haven Demand","https://finance.yahoo.com","Yahoo Finance","1h",["GOLD"]),("WTI Crude Steady as OPEC+ Holds Production Cuts","https://finance.yahoo.com","Yahoo Finance","3h",["OIL"])],
+        "CRYPTO":      [("Bitcoin Holds Above $85K; Spot ETF Flows Remain Positive","https://coindesk.com","CoinDesk","30m",["BTC"]),("Ethereum Network Upgrade Scheduled for Q2","https://coindesk.com","CoinDesk","2h",["ETH"])],
+        "ECONOMY":     [("US CPI: +2.8% YoY, In Line With Estimates","https://finance.yahoo.com","Yahoo Finance","2h",["CPI"]),("Jobless Claims Tick Up But Remain Historically Low","https://finance.yahoo.com","Yahoo Finance","1d",["JOBS"])],
+        "GEOPOLITICS": [("US-China Trade Tensions Simmer Over Tech Exports","https://reuters.com","Reuters","1h",["TRADE","CHINA"]),("Middle East Ceasefire Talks Continue in Cairo","https://reuters.com","Reuters","3h",["MIDEAST"])],
+        "FUNDS":       [("ETF Flows Hit Weekly Record on Equity Inflows","https://finance.yahoo.com","Yahoo Finance","2h",["ETF"]),("Hedge Funds Trim Net Long Exposure Ahead of CPI","https://finance.yahoo.com","Yahoo Finance","4h",["HF"])],
     }
-    return base_news.get(section, base_news["EQUITIES"])
+
+    if not HAS_FEEDPARSER:
+        fb = FALLBACK.get(section, FALLBACK["EQUITIES"])
+        return [{"title":t,"url":u,"source":s,"age":a,"tags":tg} for t,u,s,a,tg in fb]
+
+    keywords = [k.lower() for k in NEWS_KEYWORDS.get(section, [])]
+    feeds    = NEWS_FEEDS.get(section, NEWS_FEEDS["EQUITIES"])
+    results  = []
+    seen     = set()
+
+    for source_name, feed_url in feeds:
+        try:
+            feed = feedparser.parse(feed_url)
+            for entry in feed.entries[:20]:
+                title = entry.get("title","").strip()
+                url   = entry.get("link","")
+                if not title or url in seen:
+                    continue
+                tl = title.lower()
+                # For crypto feeds we skip keyword filter (all articles are relevant)
+                if section != "CRYPTO":
+                    if not any(kw in tl for kw in keywords):
+                        continue
+                seen.add(url)
+                # Auto-generate tags from title
+                tags = []
+                tag_map = {
+                    "bitcoin":"BTC","btc":"BTC","ethereum":"ETH","crypto":"CRYPTO",
+                    "fed":"FED","federal reserve":"FED","fomc":"FED",
+                    "inflation":"CPI","cpi":"CPI","rate":"RATES","yield":"RATES",
+                    "gold":"GOLD","oil":"OIL","crude":"OIL",
+                    "dollar":"DXY","euro":"EUR","yen":"JPY",
+                    "china":"CHINA","russia":"RUSSIA","ukraine":"UKR",
+                    "earnings":"EARN","gdp":"GDP","jobs":"JOBS",
+                    "etf":"ETF","fund":"FUND",
+                }
+                for kw, tag in tag_map.items():
+                    if kw in tl and tag not in tags:
+                        tags.append(tag)
+                if not tags:
+                    tags = [section[:4]]
+                results.append({
+                    "title":  title,
+                    "url":    url,
+                    "source": source_name,
+                    "age":    _parse_age(entry),
+                    "tags":   tags[:3],
+                })
+                if len(results) >= 10:
+                    break
+        except Exception:
+            continue
+        if len(results) >= 10:
+            break
+
+    if not results:
+        fb = FALLBACK.get(section, FALLBACK["EQUITIES"])
+        return [{"title":t,"url":u,"source":s,"age":a,"tags":tg} for t,u,s,a,tg in fb]
+
+    return results
+
+
+def summarise_article(title: str, url: str) -> str:
+    """
+    Calls Anthropic API to generate a 1-2 sentence market-focused summary.
+    Returns the summary string, or an error message.
+    """
+    try:
+        import urllib.request, urllib.error
+        prompt = (
+            f"You are a financial news summariser for a professional market terminal. "
+            f"Write exactly 1-2 concise sentences summarising this article for a trader/investor audience. "
+            f"Focus on market impact, numbers, and actionable context. Be factual and direct.\n\n"
+            f"Article title: {title}\n"
+            f"Article URL: {url}\n\n"
+            f"Summary (1-2 sentences only, no preamble):"
+        )
+        payload = _json.dumps({
+            "model": "claude-sonnet-4-20250514",
+            "max_tokens": 120,
+            "messages": [{"role": "user", "content": prompt}]
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.anthropic.com/v1/messages",
+            data=payload,
+            headers={
+                "content-type":      "application/json",
+                "anthropic-version": "2023-06-01",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = _json.loads(resp.read())
+        return data["content"][0]["text"].strip()
+    except Exception as e:
+        return f"Summary unavailable ({type(e).__name__})."
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SIDEBAR — Watchlist
@@ -1035,15 +1183,75 @@ def render_section(section_name: str, default_tickers: list):
 
     # ── NEWS ──────────────────────────────────────────────────────────────────
     with sub_tabs[4]:
-        news_items = get_placeholder_news(section_name)
         st.markdown('<div class="bb-section">LATEST HEADLINES</div>', unsafe_allow_html=True)
-        for headline, age, tags in news_items:
-            tags_html = "".join(f'<span class="news-tag">{t}</span>' for t in tags)
-            st.markdown(f"""
-            <div class="news-card">
-              <div class="news-headline">{headline}</div>
-              <div class="news-meta">{tags_html} &nbsp;{age} ago</div>
-            </div>""", unsafe_allow_html=True)
+
+        # Fetch button + live feed
+        col_nr, col_nb = st.columns([5, 1])
+        with col_nb:
+            if st.button("↺ REFRESH", key=f"news_refresh_{section_name}"):
+                fetch_live_news.clear()
+                st.rerun()
+
+        with st.spinner("Loading news…"):
+            news_items = fetch_live_news(section_name)
+
+        if not news_items:
+            st.info("No articles found. Try refreshing.")
+        else:
+            # Session state key for summaries cache
+            sum_key = f"summaries_{section_name}"
+            if sum_key not in st.session_state:
+                st.session_state[sum_key] = {}
+
+            for idx, article in enumerate(news_items):
+                title  = article["title"]
+                url    = article["url"]
+                source = article["source"]
+                age    = article["age"]
+                tags   = article["tags"]
+
+                tags_html = "".join(
+                    f'<span class="news-tag">{t}</span>' for t in tags
+                )
+
+                # Card HTML
+                st.markdown(
+                    f'<div class="news-card" style="margin-bottom:0;">'
+                    f'<div class="news-headline" style="color:#cccccc!important;font-weight:500!important;">{title}</div>'
+                    f'<div class="news-meta" style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem;">'
+                    f'{tags_html}'
+                    f'<span style="color:#555;font-size:9px;font-weight:600!important;">{source}</span>'
+                    f'<span style="color:#333;font-size:9px;">· {age} ago</span>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
+
+                # Expand button — generates AI summary on click
+                art_id = f"news_{section_name}_{idx}"
+                btn_label = "▾ summary" if art_id not in st.session_state[sum_key] else "▴ hide"
+                if st.button(btn_label, key=f"btn_{art_id}"):
+                    if art_id in st.session_state[sum_key]:
+                        del st.session_state[sum_key][art_id]
+                    else:
+                        with st.spinner("Summarising…"):
+                            st.session_state[sum_key][art_id] = summarise_article(title, url)
+                    st.rerun()
+
+                # Show summary if fetched
+                if art_id in st.session_state[sum_key]:
+                    summary = st.session_state[sum_key][art_id]
+                    st.markdown(
+                        f'<div style="background:#0a0a0a;border-left:2px solid #00ff41;'
+                        f'padding:0.4rem 0.65rem;margin:0.1rem 0 0.1rem 0;">'
+                        f'<div style="font-size:11px;color:#cccccc!important;font-weight:400;line-height:1.55;">{summary}</div>'
+                        f'<a href="{url}" target="_blank" style="font-size:9px;color:#00ff41!important;'
+                        f'font-weight:600;text-decoration:none;letter-spacing:0.08em;display:inline-block;margin-top:0.3rem;">'
+                        f'READ FULL ARTICLE →</a>'
+                        f'</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                st.markdown('<div style="border-bottom:1px solid #111;margin:0.1rem 0 0.35rem;"></div>', unsafe_allow_html=True)
 
     # ── FORMULAS ──────────────────────────────────────────────────────────────
     with sub_tabs[5]:
@@ -1296,9 +1504,47 @@ with tabs[2]:  # RATES
         st.dataframe(fomc_data, use_container_width=True, hide_index=True)
 
     with rates_tabs[4]:
-        for h, a, tags in get_placeholder_news("RATES"):
-            tags_html = "".join(f'<span class="news-tag">{t}</span>' for t in tags)
-            st.markdown(f'<div class="news-card"><div class="news-headline">{h}</div><div class="news-meta">{tags_html} {a} ago</div></div>', unsafe_allow_html=True)
+        with st.spinner("Loading news…"):
+            news_items = fetch_live_news("RATES")
+        col_nr2, col_nb2 = st.columns([5, 1])
+        with col_nb2:
+            if st.button("↺ REFRESH", key="news_refresh_rates_standalone"):
+                fetch_live_news.clear()
+                st.rerun()
+        sum_key2 = "summaries_rates_standalone"
+        if sum_key2 not in st.session_state:
+            st.session_state[sum_key2] = {}
+        for idx2, article2 in enumerate(news_items):
+            title2  = article2["title"]; url2 = article2["url"]
+            source2 = article2["source"]; age2 = article2["age"]; tags2 = article2["tags"]
+            tags_html2 = "".join(f'<span class="news-tag">{t}</span>' for t in tags2)
+            st.markdown(
+                f'<div class="news-card" style="margin-bottom:0;">' +
+                f'<div class="news-headline" style="color:#cccccc!important;font-weight:500!important;">{title2}</div>' +
+                f'<div class="news-meta" style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem;">' +
+                f'{tags_html2}<span style="color:#555;font-size:9px;font-weight:600!important;">{source2}</span>' +
+                f'<span style="color:#333;font-size:9px;">· {age2} ago</span></div></div>',
+                unsafe_allow_html=True,
+            )
+            art_id2 = f"news_rates_standalone_{idx2}"
+            btn_lbl2 = "▾ summary" if art_id2 not in st.session_state[sum_key2] else "▴ hide"
+            if st.button(btn_lbl2, key=f"btn_{art_id2}"):
+                if art_id2 in st.session_state[sum_key2]:
+                    del st.session_state[sum_key2][art_id2]
+                else:
+                    with st.spinner("Summarising…"):
+                        st.session_state[sum_key2][art_id2] = summarise_article(title2, url2)
+                st.rerun()
+            if art_id2 in st.session_state[sum_key2]:
+                summary2 = st.session_state[sum_key2][art_id2]
+                st.markdown(
+                    f'<div style="background:#0a0a0a;border-left:2px solid #00ff41;padding:0.4rem 0.65rem;margin:0.1rem 0;">' +
+                    f'<div style="font-size:11px;color:#cccccc!important;line-height:1.55;">{summary2}</div>' +
+                    f'<a href="{url2}" target="_blank" style="font-size:9px;color:#00ff41!important;font-weight:600;' +
+                    f'text-decoration:none;letter-spacing:0.08em;display:inline-block;margin-top:0.3rem;">READ FULL ARTICLE →</a></div>',
+                    unsafe_allow_html=True,
+                )
+            st.markdown('<div style="border-bottom:1px solid #111;margin:0.1rem 0 0.35rem;"></div>', unsafe_allow_html=True)
 
     with rates_tabs[5]:
         st.info("See FORMULAS tab in any section's sub-navigation.")
@@ -1485,9 +1731,47 @@ with tabs[8]:  # GEOPOLITICS
                      use_container_width=True, hide_index=True)
 
     with geo_tabs[3]:
-        for h, a, tags in get_placeholder_news("GEOPOLITICS"):
-            tags_html = "".join(f'<span class="news-tag">{t}</span>' for t in tags)
-            st.markdown(f'<div class="news-card"><div class="news-headline">{h}</div><div class="news-meta">{tags_html} {a} ago</div></div>', unsafe_allow_html=True)
+        with st.spinner("Loading news…"):
+            news_items = fetch_live_news("GEOPOLITICS")
+        col_nr2, col_nb2 = st.columns([5, 1])
+        with col_nb2:
+            if st.button("↺ REFRESH", key="news_refresh_geo_standalone"):
+                fetch_live_news.clear()
+                st.rerun()
+        sum_key2 = "summaries_geo_standalone"
+        if sum_key2 not in st.session_state:
+            st.session_state[sum_key2] = {}
+        for idx2, article2 in enumerate(news_items):
+            title2  = article2["title"]; url2 = article2["url"]
+            source2 = article2["source"]; age2 = article2["age"]; tags2 = article2["tags"]
+            tags_html2 = "".join(f'<span class="news-tag">{t}</span>' for t in tags2)
+            st.markdown(
+                f'<div class="news-card" style="margin-bottom:0;">' +
+                f'<div class="news-headline" style="color:#cccccc!important;font-weight:500!important;">{title2}</div>' +
+                f'<div class="news-meta" style="display:flex;align-items:center;gap:0.4rem;margin-top:0.25rem;">' +
+                f'{tags_html2}<span style="color:#555;font-size:9px;font-weight:600!important;">{source2}</span>' +
+                f'<span style="color:#333;font-size:9px;">· {age2} ago</span></div></div>',
+                unsafe_allow_html=True,
+            )
+            art_id2 = f"news_geo_standalone_{idx2}"
+            btn_lbl2 = "▾ summary" if art_id2 not in st.session_state[sum_key2] else "▴ hide"
+            if st.button(btn_lbl2, key=f"btn_{art_id2}"):
+                if art_id2 in st.session_state[sum_key2]:
+                    del st.session_state[sum_key2][art_id2]
+                else:
+                    with st.spinner("Summarising…"):
+                        st.session_state[sum_key2][art_id2] = summarise_article(title2, url2)
+                st.rerun()
+            if art_id2 in st.session_state[sum_key2]:
+                summary2 = st.session_state[sum_key2][art_id2]
+                st.markdown(
+                    f'<div style="background:#0a0a0a;border-left:2px solid #00ff41;padding:0.4rem 0.65rem;margin:0.1rem 0;">' +
+                    f'<div style="font-size:11px;color:#cccccc!important;line-height:1.55;">{summary2}</div>' +
+                    f'<a href="{url2}" target="_blank" style="font-size:9px;color:#00ff41!important;font-weight:600;' +
+                    f'text-decoration:none;letter-spacing:0.08em;display:inline-block;margin-top:0.3rem;">READ FULL ARTICLE →</a></div>',
+                    unsafe_allow_html=True,
+                )
+            st.markdown('<div style="border-bottom:1px solid #111;margin:0.1rem 0 0.35rem;"></div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CHAT ASSISTANT — bottom panel (always visible)
