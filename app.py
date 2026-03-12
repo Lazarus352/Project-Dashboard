@@ -777,7 +777,7 @@ with tab6:
     cols_s = st.columns(len(suggestions))
     for col, sug in zip(cols_s, suggestions):
         with col:
-            if st.button(sug, key=f"sug_{sug[:10]}"):
+            if st.button(sug, key=f"sug_{hash(sug) % 1000000}"):
                 answer = answer_question(sug, df_tbl, st.session_state.uploaded_text)
                 st.session_state.chat_history.append({"role": "user",    "content": sug})
                 st.session_state.chat_history.append({"role": "assistant","content": answer})
