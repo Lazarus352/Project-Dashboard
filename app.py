@@ -44,174 +44,127 @@ st.set_page_config(
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-/* ── Google Fonts: Inter (UI body) + JetBrains Mono (data/numbers only) ── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* ── Fonts: IBM Plex Mono everywhere — true terminal aesthetic ── */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
 
-/* ══ DESIGN TOKENS ══════════════════════════════════════════════════════════ */
+/* ══ TOKENS ═══════════════════════════════════════════════════════════════ */
 :root {
-  /* Backgrounds — true dark, not pure black (easier on eyes, better contrast) */
-  --bg:         #0e1117;
-  --bg1:        #131720;
-  --bg2:        #181d27;
-  --bg3:        #1d2330;
-  --border:     #242c3d;
-  --border2:    #2a3347;
+  --bg:      #000000;   /* pure black — maximum contrast */
+  --bg1:     #0a0a0a;
+  --bg2:     #111111;
+  --bg3:     #171717;
+  --border:  #1e1e1e;
+  --border2: #252525;
 
-  /* Accent colours */
-  --green:      #00e676;
-  --green-dim:  #00b85a;
-  --green-dark: #00230f;
-  --red:        #ff4757;
-  --red-dim:    #cc2233;
-  --red-dark:   #2d0008;
-  --amber:      #ffc107;
-  --blue:       #29b6f6;
+  /* Accent */
+  --green:      #00ff41;
+  --green-dim:  #00c030;
+  --green-dark: #001a08;
+  --red:        #ff3b3b;
+  --red-dark:   #1a0000;
+  --amber:      #ffb700;
+  --blue:       #00b8d4;
 
-  /* ── TEXT — crisp, high-contrast hierarchy ── */
-  --text-primary:   #ededed;   /* body / table values  — near-white, not glaring */
-  --text-secondary: #a0aab8;   /* labels, captions     — readable mid-grey       */
-  --text-muted:     #576070;   /* placeholders, dims   — subtle                  */
-  --text-accent:    #ffffff;   /* hero numbers, titles — full white               */
+  /* Text — crisp white hierarchy on black */
+  --text-hi:    #ffffff;   /* ticker symbols, hero numbers  */
+  --text-body:  #cccccc;   /* body, table values            */
+  --text-dim:   #666666;   /* labels, captions              */
+  --text-ghost: #333333;   /* barely-visible dividers       */
 
-  /* Legacy alias so existing HTML snippets still work */
-  --white: #ededed;
-  --dim:   #576070;
-  --dim2:  #2a3347;
-
-  /* ── TYPOGRAPHY ── */
-  --font-ui:   'Inter', 'Segoe UI', 'Helvetica Neue', -apple-system, sans-serif;
-  --font-data: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
-
-  /* Sizes */
-  --fs-xs:   11px;   /* tags, meta, status dots  */
-  --fs-sm:   12px;   /* table cells, captions    */
-  --fs-base: 14px;   /* body text default        */
-  --fs-md:   15px;   /* sub-headings             */
-  --fs-lg:   16px;   /* section headings         */
-  --fs-xl:   22px;   /* hero numbers             */
-
-  /* Rendering */
-  --smooth: antialiased;
+  /* Typography — one font family, size scale in px */
+  --font: 'IBM Plex Mono', 'Menlo', 'Consolas', monospace;
+  --f8:  8px;
+  --f9:  9px;
+  --f10: 10px;
+  --f11: 11px;
+  --f12: 12px;
+  --f13: 13px;
+  --f18: 18px;   /* hero price */
 }
 
-/* ══ GLOBAL RESET / BASE ════════════════════════════════════════════════════ */
-html, body {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-base) !important;
-  background: var(--bg) !important;
-  color: var(--text-primary) !important;
-
-  /* Crisp rendering on all platforms */
-  -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
-  text-rendering: optimizeLegibility !important;
-}
-
-/* Catch-all for Streamlit's injected class names */
+/* ══ GLOBAL RESET ═════════════════════════════════════════════════════════ */
+html, body,
 [class*="css"], [class*="st-"], .element-container,
 p, div, span, li, td, th, label, input, textarea, select, button {
-  font-family: var(--font-ui) !important;
+  font-family: var(--font) !important;
   -webkit-font-smoothing: antialiased !important;
   text-rendering: optimizeLegibility !important;
-  letter-spacing: 0.2px !important;
-  line-height: 1.45 !important;
+  letter-spacing: 0.02em !important;
 }
-
-/* Numbers / data fields — use mono font */
-[data-testid="stDataFrame"] *,
-[data-testid="stMetric"] *,
-.bb-card-val,
-.font-data { font-family: var(--font-data) !important; }
-
+html, body { font-size: var(--f11) !important; }
 .stApp { background: var(--bg) !important; }
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
+.stDeployButton { display: none !important; }
+[data-testid="stDecoration"] { display: none !important; }
 
-/* ══ SIDEBAR ════════════════════════════════════════════════════════════════ */
+/* ══ SIDEBAR ══════════════════════════════════════════════════════════════ */
 section[data-testid="stSidebar"] {
-  background: var(--bg1) !important;
+  background: var(--bg) !important;
   border-right: 1px solid var(--border2) !important;
 }
-section[data-testid="stSidebar"] > div { padding: 0.75rem 0.5rem !important; }
+section[data-testid="stSidebar"] > div { padding: 0.6rem 0.5rem !important; }
 
-/* ══ TOP BAR ════════════════════════════════════════════════════════════════ */
+/* ══ TOP BAR ══════════════════════════════════════════════════════════════ */
 .top-bar {
   background: var(--bg1);
   border-bottom: 1px solid var(--border2);
-  padding: 0.35rem 1rem;
+  padding: 0.3rem 0.85rem;
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 999;
 }
 .top-logo {
-  font-family: var(--font-ui);
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--green);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  font-size: var(--f10); font-weight: 600;
+  color: var(--green); letter-spacing: 0.2em; text-transform: uppercase;
 }
-.top-time {
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
-  letter-spacing: 0.06em;
-}
+.top-time { font-size: var(--f9); color: var(--text-dim); letter-spacing: 0.05em; }
 .tick-up   { color: var(--green) !important; }
 .tick-down { color: var(--red)   !important; }
 
-/* ══ MAIN NAV TABS ══════════════════════════════════════════════════════════ */
+/* ══ MAIN NAV TABS ════════════════════════════════════════════════════════ */
 .stTabs [data-baseweb="tab-list"] {
   background: var(--bg1) !important;
   border-bottom: 1px solid var(--border2) !important;
-  border-top: none !important;
-  gap: 0 !important;
-  padding: 0 !important;
+  gap: 0 !important; padding: 0 !important;
 }
 .stTabs [data-baseweb="tab"] {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.12em !important;
-  color: var(--text-muted) !important;
-  padding: 0.6rem 1.15rem !important;
+  font-size: var(--f9) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.14em !important;
+  color: var(--text-dim) !important;
+  padding: 0.55rem 1rem !important;
   border-right: 1px solid var(--border) !important;
   border-radius: 0 !important;
   background: transparent !important;
   text-transform: uppercase !important;
-  min-width: fit-content !important;
-  -webkit-font-smoothing: antialiased !important;
 }
 .stTabs [aria-selected="true"] {
-  background: var(--bg3) !important;
+  background: var(--bg2) !important;
   color: var(--green) !important;
-  border-top: 2px solid var(--green) !important;
+  border-top: 1px solid var(--green) !important;
 }
 .stTabs [data-baseweb="tab-panel"] {
   background: var(--bg) !important;
-  padding: 0.75rem 0.75rem 2rem !important;
-  border: none !important;
+  padding: 0.5rem 0.6rem 2rem !important;
 }
 
-/* ══ RADIO — toolbar style ══════════════════════════════════════════════════ */
+/* ══ RADIO — horizontal button strip ═════════════════════════════════════ */
 .stRadio > div {
   display: flex !important;
   flex-direction: row !important;
-  gap: 0 !important;
-  flex-wrap: wrap !important;
+  gap: 0 !important; flex-wrap: wrap !important;
 }
 .stRadio > div > label {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.1em !important;
-  padding: 0.28rem 0.75rem !important;
+  font-size: var(--f9) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.12em !important;
+  padding: 0.22rem 0.6rem !important;
   border: 1px solid var(--border2) !important;
-  color: var(--text-muted) !important;
+  color: var(--text-dim) !important;
   cursor: pointer !important;
   background: var(--bg1) !important;
   margin: 0 !important;
   text-transform: uppercase !important;
-  -webkit-font-smoothing: antialiased !important;
 }
 .stRadio > div > label:has(input:checked) {
   color: var(--green) !important;
@@ -221,280 +174,147 @@ section[data-testid="stSidebar"] > div { padding: 0.75rem 0.5rem !important; }
 .stRadio > div > label > div:first-child { display: none !important; }
 div[data-testid="stRadio"] > label { display: none !important; }
 
-/* ══ SELECTBOX ══════════════════════════════════════════════════════════════ */
+/* ══ SELECTBOX ════════════════════════════════════════════════════════════ */
 .stSelectbox > div > div {
-  background: var(--bg2) !important;
+  background: var(--bg1) !important;
   border: 1px solid var(--border2) !important;
-  color: var(--text-primary) !important;
-  font-size: var(--fs-sm) !important;
-  font-family: var(--font-ui) !important;
+  color: var(--text-body) !important;
+  font-size: var(--f10) !important;
   border-radius: 0 !important;
 }
 .stSelectbox label { display: none !important; }
 
-/* ══ METRIC / HERO CARDS ════════════════════════════════════════════════════ */
-.bb-card {
-  background: var(--bg1);
-  border: 1px solid var(--border2);
-  padding: 0.55rem 0.85rem;
-  position: relative;
-  overflow: hidden;
+/* ══ TEXT INPUT ═══════════════════════════════════════════════════════════ */
+.stTextInput > div > div {
+  background: var(--bg1) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 0 !important;
+  color: var(--text-hi) !important;
+  font-size: var(--f11) !important;
 }
-.bb-card-label {
-  font-family: var(--font-ui);
-  font-size: var(--fs-xs);
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  -webkit-font-smoothing: antialiased;
+.stTextInput label {
+  font-size: var(--f9) !important; font-weight: 500 !important;
+  color: var(--text-dim) !important;
+  letter-spacing: 0.12em !important; text-transform: uppercase !important;
 }
-.bb-card-val {
-  font-family: var(--font-data);
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  color: var(--text-accent);
-  line-height: 1.15;
-  -webkit-font-smoothing: antialiased;
-}
-.bb-card-chg   { font-family: var(--font-data); font-size: var(--fs-sm); font-weight: 600; margin-top: 0.15rem; }
-.bb-card-chg.up { color: var(--green); }
-.bb-card-chg.dn { color: var(--red); }
-.bb-card-chg.fl { color: var(--text-muted); }
-.bb-card-bar      { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--green); }
-.bb-card-bar.red   { background: var(--red); }
-.bb-card-bar.amber { background: var(--amber); }
 
-/* ══ SECTION LABELS ═════════════════════════════════════════════════════════ */
+/* ══ MULTISELECT ══════════════════════════════════════════════════════════ */
+.stMultiSelect > div { background: var(--bg1) !important; border-radius: 0 !important; }
+.stMultiSelect label {
+  font-size: var(--f9) !important; color: var(--text-dim) !important;
+  letter-spacing: 0.1em !important;
+}
+
+/* ══ SECTION LABELS ═══════════════════════════════════════════════════════ */
 .bb-section {
-  font-family: var(--font-ui);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--text-muted);
+  font-size: var(--f9); font-weight: 500;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-dim);
   border-left: 2px solid var(--green);
-  padding-left: 0.5rem;
-  margin: 0.85rem 0 0.45rem;
-  -webkit-font-smoothing: antialiased;
+  padding-left: 0.45rem;
+  margin: 0.7rem 0 0.35rem;
 }
 
-/* ══ DATA TABLES ════════════════════════════════════════════════════════════ */
+/* ══ DATA TABLES ══════════════════════════════════════════════════════════ */
 .stDataFrame { border: 1px solid var(--border2) !important; }
-
-/* Table header */
 [data-testid="stDataFrame"] th,
 [data-testid="stDataFrame"] [data-testid="glideDataEditor"] .gdg-header {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  font-weight: 600 !important;
-  color: var(--text-muted) !important;
+  font-size: var(--f9) !important; font-weight: 500 !important;
+  color: var(--text-dim) !important;
   background: var(--bg2) !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important; text-transform: uppercase !important;
 }
-/* Table cells */
 [data-testid="stDataFrame"] td,
-[data-testid="stDataFrame"] [data-testid="glideDataEditor"] .gdg-cell {
-  font-family: var(--font-data) !important;
-  font-size: var(--fs-sm) !important;
-  color: var(--text-primary) !important;
-  -webkit-font-smoothing: antialiased !important;
-}
-/* Broad catch for all dataframe text */
+[data-testid="stDataFrame"] [data-testid="glideDataEditor"] .gdg-cell,
 [data-testid="stDataFrame"] * {
-  font-size: var(--fs-sm) !important;
-  -webkit-font-smoothing: antialiased !important;
+  font-size: var(--f10) !important;
+  color: var(--text-body) !important;
 }
 
-/* ══ BUTTONS ════════════════════════════════════════════════════════════════ */
+/* ══ BUTTONS ══════════════════════════════════════════════════════════════ */
 .stButton > button {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.1em !important;
-  text-transform: uppercase !important;
-  background: var(--bg2) !important;
+  font-size: var(--f9) !important; font-weight: 500 !important;
+  letter-spacing: 0.12em !important; text-transform: uppercase !important;
+  background: var(--bg1) !important;
   color: var(--green) !important;
   border: 1px solid var(--green) !important;
-  border-radius: 2px !important;
-  padding: 0.32rem 0.9rem !important;
-  -webkit-font-smoothing: antialiased !important;
+  border-radius: 0 !important;
+  padding: 0.25rem 0.75rem !important;
 }
 .stButton > button:hover { background: var(--green-dark) !important; }
 
-/* ══ TEXT / NUMBER INPUTS ════════════════════════════════════════════════════ */
-.stTextInput > div > div {
-  background: var(--bg2) !important;
-  border: 1px solid var(--border2) !important;
-  border-radius: 2px !important;
-  color: var(--text-primary) !important;
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-sm) !important;
-}
-.stTextInput label {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  font-weight: 600 !important;
-  color: var(--text-muted) !important;
-  letter-spacing: 0.1em !important;
-  text-transform: uppercase !important;
-}
-
-/* ══ NEWS CARDS ══════════════════════════════════════════════════════════════ */
+/* ══ NEWS CARDS ═══════════════════════════════════════════════════════════ */
 .news-card {
   border-left: 2px solid var(--border2);
-  padding: 0.45rem 0.7rem;
-  margin-bottom: 0.45rem;
+  padding: 0.4rem 0.6rem; margin-bottom: 0.35rem;
   background: var(--bg1);
 }
 .news-card:hover { border-left-color: var(--green); }
-.news-headline {
-  font-family: var(--font-ui);
-  font-size: var(--fs-base);
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1.45;
-  -webkit-font-smoothing: antialiased;
-}
-.news-meta {
-  font-family: var(--font-ui);
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
-  margin-top: 0.18rem;
-  letter-spacing: 0.05em;
-}
+.news-headline { font-size: var(--f11); font-weight: 400; color: var(--text-body); line-height: 1.4; }
+.news-meta { font-size: var(--f9); color: var(--text-dim); margin-top: 0.15rem; letter-spacing: 0.04em; }
 .news-tag {
-  display: inline-block;
-  font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 0.05rem 0.35rem;
-  border: 1px solid var(--border2);
-  color: var(--text-muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-right: 0.3rem;
+  display: inline-block; font-size: var(--f8); font-weight: 500;
+  padding: 0.03rem 0.3rem; border: 1px solid var(--border2);
+  color: var(--text-dim); letter-spacing: 0.08em;
+  text-transform: uppercase; margin-right: 0.25rem;
 }
 
-/* ══ WATCHLIST ════════════════════════════════════════════════════════════════ */
+/* ══ WATCHLIST ════════════════════════════════════════════════════════════ */
 .wl-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid var(--border);
-  font-family: var(--font-data);
-  font-size: var(--fs-sm);
+  padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border);
 }
-.wl-ticker { color: var(--amber); font-weight: 700; letter-spacing: 0.05em; min-width: 60px; }
-.wl-price  { color: var(--text-primary); text-align: right; min-width: 70px; }
-.wl-chg    { text-align: right; min-width: 60px; font-weight: 600; }
+.wl-ticker { color: var(--amber); font-weight: 600; font-size: var(--f10); letter-spacing: 0.06em; min-width: 55px; }
+.wl-price  { color: var(--text-hi); font-size: var(--f10); text-align: right; min-width: 65px; }
+.wl-chg    { font-size: var(--f10); text-align: right; min-width: 55px; font-weight: 500; }
 
-/* ══ CHAT ════════════════════════════════════════════════════════════════════ */
-.chat-wrap   { border: 1px solid var(--border2); background: var(--bg1); margin-top: 0.5rem; }
-.chat-header { background: var(--bg3); border-bottom: 1px solid var(--border2); padding: 0.3rem 0.75rem; font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.15em; color: var(--green); text-transform: uppercase; }
+/* ══ MACRO SNAPSHOT ═══════════════════════════════════════════════════════ */
+.macro-row {
+  display: flex; justify-content: space-between;
+  font-size: var(--f9); padding: 0.18rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.macro-label { color: var(--text-dim); }
+.macro-val   { color: var(--text-hi); font-weight: 500; }
+
+/* ══ CHAT ═════════════════════════════════════════════════════════════════ */
 .chat-msg-user {
-  background: var(--bg3);
-  border-left: 2px solid var(--amber);
-  padding: 0.45rem 0.75rem;
-  margin: 0.3rem;
-  font-family: var(--font-ui);
-  font-size: var(--fs-sm);
-  color: var(--text-primary);
-  line-height: 1.5;
+  background: var(--bg2); border-left: 2px solid var(--amber);
+  padding: 0.4rem 0.65rem; margin: 0.25rem;
+  font-size: var(--f10); color: var(--text-body); line-height: 1.5;
 }
 .chat-msg-ai {
-  background: var(--bg2);
-  border-left: 2px solid var(--green);
-  padding: 0.45rem 0.75rem;
-  margin: 0.3rem;
-  font-family: var(--font-ui);
-  font-size: var(--fs-sm);
-  color: var(--text-primary);
-  line-height: 1.5;
+  background: var(--bg1); border-left: 2px solid var(--green);
+  padding: 0.4rem 0.65rem; margin: 0.25rem;
+  font-size: var(--f10); color: var(--text-body); line-height: 1.5;
 }
 
-/* ══ MISC ════════════════════════════════════════════════════════════════════ */
-.hi-green { color: var(--green) !important; }
-.hi-red   { color: var(--red)   !important; }
-
-.ticker-tape {
-  background: var(--bg3);
-  border-top: 1px solid var(--border2);
-  border-bottom: 1px solid var(--border2);
-  padding: 0.28rem 1rem;
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  letter-spacing: 0.04em;
-}
-
-.hm-cell {
-  text-align: center;
-  font-family: var(--font-data);
-  font-size: var(--fs-xs);
-  padding: 0.3rem;
-  border: 1px solid var(--border);
-}
-
-/* Multiselect */
-.stMultiSelect > div {
-  background: var(--bg2) !important;
-  border-radius: 2px !important;
-}
-.stMultiSelect label {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  color: var(--text-muted) !important;
-  letter-spacing: 0.08em !important;
-}
-
-/* Number input */
-.stNumberInput > div { border-radius: 2px !important; }
-.stNumberInput label {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  color: var(--text-muted) !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.08em !important;
-}
-
-/* Expander */
+/* ══ EXPANDER ═════════════════════════════════════════════════════════════ */
 .streamlit-expanderHeader {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-sm) !important;
-  font-weight: 600 !important;
-  background: var(--bg2) !important;
-  color: var(--text-primary) !important;
-  border-radius: 0 !important;
-  border: 1px solid var(--border2) !important;
+  font-size: var(--f10) !important; font-weight: 500 !important;
+  background: var(--bg1) !important; color: var(--text-body) !important;
+  border-radius: 0 !important; border: 1px solid var(--border2) !important;
   letter-spacing: 0.05em !important;
 }
 .streamlit-expanderContent {
-  background: var(--bg1) !important;
-  border: 1px solid var(--border2) !important;
+  background: var(--bg1) !important; border: 1px solid var(--border2) !important;
   border-top: none !important;
 }
 
-/* st.caption / st.info text */
+/* ══ MISC ═════════════════════════════════════════════════════════════════ */
+.ticker-tape {
+  background: var(--bg1); border-bottom: 1px solid var(--border2);
+  padding: 0.22rem 0.85rem; font-size: var(--f9);
+  color: var(--text-dim); white-space: nowrap; overflow: hidden; letter-spacing: 0.04em;
+}
 .stCaption, [data-testid="stCaptionContainer"] {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-xs) !important;
-  color: var(--text-muted) !important;
+  font-size: var(--f9) !important; color: var(--text-dim) !important;
 }
-
-/* st.info / st.warning / st.success boxes */
-.stAlert {
-  font-family: var(--font-ui) !important;
-  font-size: var(--fs-sm) !important;
-}
-
-/* Progress bar */
+.stAlert { font-size: var(--f10) !important; }
 .stProgress > div > div { background: var(--green) !important; }
-
-/* Hide Streamlit chrome */
-.stDeployButton { display: none !important; }
+.stNumberInput > div { border-radius: 0 !important; }
+.stNumberInput label { font-size: var(--f9) !important; color: var(--text-dim) !important; text-transform: uppercase !important; }
+.streamlit-expanderHeader { font-size: var(--f10) !important; }
 [data-testid="stDecoration"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -517,35 +337,35 @@ for k, v in defaults.items():
 # CONSTANTS
 # ══════════════════════════════════════════════════════════════════════════════
 PLOTLY_BASE = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, Segoe UI, Helvetica Neue, sans-serif",
-              color="#a0aab8", size=11),
+    paper_bgcolor="#000000",
+    plot_bgcolor="#000000",
+    font=dict(family="IBM Plex Mono, Menlo, Consolas, monospace", color="#555555", size=9),
     xaxis=dict(
-        gridcolor="#1d2330",
-        linecolor="#2a3347",
-        zerolinecolor="#2a3347",
-        tickfont=dict(family="JetBrains Mono, monospace", size=10, color="#a0aab8"),
+        gridcolor="#111111",
+        linecolor="#1a1a1a",
+        zerolinecolor="#1a1a1a",
+        tickfont=dict(family="IBM Plex Mono, monospace", size=9, color="#555555"),
         showgrid=True,
     ),
     yaxis=dict(
-        gridcolor="#1d2330",
-        linecolor="#2a3347",
-        zerolinecolor="#2a3347",
-        tickfont=dict(family="JetBrains Mono, monospace", size=10, color="#a0aab8"),
+        gridcolor="#111111",
+        linecolor="#1a1a1a",
+        zerolinecolor="#1a1a1a",
+        tickfont=dict(family="IBM Plex Mono, monospace", size=9, color="#555555"),
         showgrid=True,
+        side="right",
     ),
     legend=dict(
         bgcolor="rgba(0,0,0,0)",
-        bordercolor="#2a3347",
-        font=dict(family="Inter, sans-serif", size=10, color="#a0aab8"),
+        bordercolor="#1a1a1a",
+        font=dict(family="IBM Plex Mono, monospace", size=9, color="#555555"),
     ),
     hoverlabel=dict(
-        bgcolor="#1d2330",
-        bordercolor="#2a3347",
-        font=dict(family="JetBrains Mono, monospace", size=11, color="#ededed"),
+        bgcolor="#111111",
+        bordercolor="#1a1a1a",
+        font=dict(family="IBM Plex Mono, monospace", size=10, color="#cccccc"),
     ),
-    margin=dict(l=40, r=20, t=32, b=30),
+    margin=dict(l=0, r=55, t=24, b=24),
     hovermode="x unified",
 )
 
@@ -871,71 +691,88 @@ def get_placeholder_news(section: str) -> list:
 # SIDEBAR — Watchlist
 # ══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
-    st.markdown('<div style="font-size:0.65rem;color:#00ff41;letter-spacing:0.2em;padding:0.25rem 0 0.5rem;text-transform:uppercase;border-bottom:1px solid #1a1a1a;margin-bottom:0.5rem;">▸ WATCHLIST</div>', unsafe_allow_html=True)
+    # ── header ──────────────────────────────────────────────────────────────
+    st.markdown(
+        '<div style="font-size:9px;color:#00ff41;letter-spacing:0.22em;font-weight:600;'
+        'padding:0.3rem 0 0.5rem;text-transform:uppercase;'
+        'border-bottom:1px solid #1e1e1e;margin-bottom:0.4rem;">▸ WATCHLIST</div>',
+        unsafe_allow_html=True,
+    )
 
-    add_col, btn_col = st.columns([3, 1])
+    # ── add ticker ──────────────────────────────────────────────────────────
+    add_col, btn_col = st.columns([4, 1])
     with add_col:
-        new_ticker = st.text_input("ADD TICKER", placeholder="e.g. TSLA", key="wl_input", label_visibility="collapsed")
+        new_ticker = st.text_input("ADD TICKER", placeholder="TSLA, NVDA…",
+                                   key="wl_input", label_visibility="collapsed")
     with btn_col:
-        st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+        st.markdown('<div style="height:6px"></div>', unsafe_allow_html=True)
         if st.button("+", key="wl_add"):
             t = new_ticker.strip().upper()
             if t and t not in st.session_state.watchlist:
                 st.session_state.watchlist.append(t)
                 st.rerun()
 
-    # Fetch all watchlist quotes
-    if HAS_YF:
-        wl_quotes = fetch_bulk_quotes(tuple(st.session_state.watchlist))
-    else:
-        wl_quotes = {}
+    # ── fetch quotes ────────────────────────────────────────────────────────
+    wl_quotes = fetch_bulk_quotes(tuple(st.session_state.watchlist)) if HAS_YF else {}
 
-    for ticker in st.session_state.watchlist:
-        q = wl_quotes.get(ticker, {})
-        price = f"{q.get('price', '—')}" if q else "—"
-        pct   = q.get("pct", 0) if q else 0
-        chg_str  = f"{pct:+.2f}%" if q else "—"
-        chg_class = "tick-up" if pct >= 0 else "tick-down"
+    # ── render rows — pure white on black ───────────────────────────────────
+    for wl_t in st.session_state.watchlist:
+        q       = wl_quotes.get(wl_t, {})
+        price   = q.get("price", None)
+        pct     = q.get("pct", 0)
+        chg_col = "#00ff41" if pct >= 0 else "#ff3b3b"
+        arrow   = "▲" if pct >= 0 else "▼"
+        price_s = f"{price:,.2f}" if price is not None else "—"
+        pct_s   = f"{arrow} {abs(pct):.2f}%" if price is not None else "—"
+        st.markdown(
+            f'<div style="display:flex;justify-content:space-between;align-items:center;'
+            f'padding:0.28rem 0.3rem;border-bottom:1px solid #111;">'
+            f'<span style="font-size:10px;color:#ffb700;font-weight:600;letter-spacing:0.06em;">{wl_t}</span>'
+            f'<span style="font-size:10px;color:#ffffff;">{price_s}</span>'
+            f'<span style="font-size:9px;color:{chg_col};font-weight:500;">{pct_s}</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
-        c1, c2 = st.columns([3, 2])
-        with c1:
-            st.markdown(f'<div style="font-size:0.68rem;color:#ffab00;font-weight:700;padding:0.15rem 0;">{ticker}</div>', unsafe_allow_html=True)
-        with c2:
-            st.markdown(f'<div style="font-size:0.65rem;text-align:right;color:#ededed;padding:0.15rem 0;">{price}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div style="font-size:0.6rem;text-align:right;class="{chg_class}" style="color:{"#00ff41" if pct >= 0 else "#ff1744"}">{chg_str}</div>', unsafe_allow_html=True)
-        st.markdown('<div style="border-bottom:1px solid #111111;margin-bottom:0.1rem;"></div>', unsafe_allow_html=True)
-
-    st.markdown('<div style="height:12px"></div>', unsafe_allow_html=True)
-    if st.button("↺ REFRESH WATCHLIST", key="wl_refresh"):
+    st.markdown('<div style="height:8px"></div>', unsafe_allow_html=True)
+    if st.button("↺ REFRESH", key="wl_refresh"):
         st.cache_data.clear()
         st.rerun()
 
-    # Remove ticker
     if st.session_state.watchlist:
-        rm = st.selectbox("REMOVE", ["—"] + st.session_state.watchlist, key="wl_rm",
-                          label_visibility="visible")
+        rm = st.selectbox("REMOVE", ["—"] + st.session_state.watchlist,
+                          key="wl_rm", label_visibility="collapsed")
         if rm != "—":
-            if st.button(f"✕ REMOVE {rm}"):
+            if st.button(f"✕ {rm}", key="wl_rm_btn"):
                 st.session_state.watchlist.remove(rm)
                 st.rerun()
 
-    st.markdown('<div style="height:16px;border-top:1px solid #1a1a1a;margin-top:0.5rem;"></div>', unsafe_allow_html=True)
-
-    # Quick macro numbers
-    st.markdown('<div style="font-size:0.55rem;color:#576070;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:0.3rem;">MACRO SNAPSHOT</div>', unsafe_allow_html=True)
+    # ── macro snapshot ────────────────────────────────────────────────────
+    st.markdown(
+        '<div style="font-size:9px;color:#333;letter-spacing:0.18em;font-weight:500;'
+        'text-transform:uppercase;margin:0.7rem 0 0.25rem;border-top:1px solid #1e1e1e;'
+        'padding-top:0.5rem;">MACRO SNAPSHOT</div>',
+        unsafe_allow_html=True,
+    )
     macro_snap = [
-        ("FED FUNDS", "4.25–4.50%", ""),
-        ("CPI YOY", "2.8%", "up"),
-        ("CORE PCE", "2.8%", "up"),
-        ("UNEMPLOYMENT", "4.1%", ""),
-        ("GDP (Q4)", "+2.3%", "up"),
-        ("10Y YIELD", "4.21%", ""),
-        ("DXY", "103.8", ""),
-        ("VIX", "18.2", ""),
+        ("FED FUNDS",    "4.25–4.50%", ""),
+        ("CPI YOY",      "2.8%",       "up"),
+        ("CORE PCE",     "2.8%",       "up"),
+        ("UNEMPLOYMENT", "4.1%",       ""),
+        ("GDP (Q4)",     "+2.3%",      "up"),
+        ("10Y YIELD",    "4.21%",      ""),
+        ("DXY",          "103.8",      ""),
+        ("VIX",          "18.2",       ""),
     ]
     for label, val, direction in macro_snap:
-        color = "#00ff41" if direction == "up" else ("#ff1744" if direction == "dn" else "#e0e0e0")
-        st.markdown(f'<div style="display:flex;justify-content:space-between;font-size:0.58rem;padding:0.1rem 0;border-bottom:1px solid #0d0d0d;"><span style="color:#576070;">{label}</span><span style="color:{color};font-weight:600;">{val}</span></div>', unsafe_allow_html=True)
+        val_col = "#00ff41" if direction == "up" else ("#ff3b3b" if direction == "dn" else "#ffffff")
+        st.markdown(
+            f'<div style="display:flex;justify-content:space-between;'
+            f'font-size:9px;padding:0.16rem 0.2rem;border-bottom:1px solid #0d0d0d;">'
+            f'<span style="color:#555;">{label}</span>'
+            f'<span style="color:{val_col};font-weight:500;">{val}</span></div>',
+            unsafe_allow_html=True,
+        )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # HEADER BAR
@@ -978,75 +815,75 @@ def render_section(section_name: str, default_tickers: list):
 
     # ── CHARTS ──────────────────────────────────────────────────────────────
     with sub_tabs[0]:
-        col_ctrl, col_chart = st.columns([1, 5])
-        with col_ctrl:
-            # ── Ticker: type ANY symbol OR quick-pick from the section list ─
-            st.markdown(
-                '<div style="font-size:11px;font-weight:600;color:#576070;'
-                'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">TICKER</div>',
-                unsafe_allow_html=True,
-            )
-            # Free-text box — accepts any ticker yfinance supports
+        # ── ROW 1: ticker input (left) + quick-pick (centre) ────────────────
+        row1a, row1b, row1c = st.columns([2, 2, 2])
+        with row1a:
             custom_input = st.text_input(
                 "ticker_text_label",
                 value=default_tickers[0],
                 key=f"text_{section_name}",
-                placeholder="e.g. NVDA, TSLA, BTC-USD",
+                placeholder="Any ticker — NVDA, BTC-USD…",
                 label_visibility="collapsed",
             )
-            # Quick-pick dropdown — selecting this overrides the text box
+        with row1b:
             picked = st.selectbox(
                 "ticker_pick_label",
                 ["— quick pick —"] + default_tickers,
                 key=f"pick_{section_name}",
                 label_visibility="collapsed",
             )
-            # Dropdown wins if user picked something; else use the text box
-            if picked != "— quick pick —":
-                ticker = picked.strip().upper()
-            else:
-                ticker = custom_input.strip().upper() if custom_input.strip() else default_tickers[0]
-
-            st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
-            chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"], key=f"ct_{section_name}")
-            tf = st.radio("TIMEFRAME", list(TIMEFRAMES.keys()), key=f"tf_{section_name}")
+        with row1c:
             overlays = st.multiselect(
                 "OVERLAYS",
                 ["SMA 20", "SMA 50", "EMA 20", "Bollinger Bands", "Fibonacci"],
                 key=f"ov_{section_name}",
+                placeholder="Overlays…",
             )
 
-        with col_chart:
-            period, interval = TIMEFRAMES[tf]
-            q = fetch_quote(ticker)
-            if q:
-                pct   = q.get("pct", 0)
-                price = q.get("price", 0.0)
-                chg   = q.get("chg", 0.0)
-                chg_color = "#00e676" if pct >= 0 else "#ff4757"
-                arrow = "▲" if pct >= 0 else "▼"
-                st.markdown(
-                    f'<div style="display:flex;align-items:baseline;gap:1rem;'
-                    f'padding:0.2rem 0 0.5rem;border-bottom:1px solid #242c3d;'
-                    f'margin-bottom:0.5rem;flex-wrap:wrap;">'
-                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.05rem;'
-                    f'color:#ffc107;font-weight:700;">{ticker}</span>'
-                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.35rem;'
-                    f'color:#ededed;font-weight:700;">{price:,.4f}</span>'
-                    f'<span style="font-family:JetBrains Mono,monospace;font-size:0.85rem;'
-                    f'color:{chg_color};font-weight:600;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
-                    f'<span style="font-size:11px;color:#576070;margin-left:auto;">'
-                    f'15-min delay · yfinance</span></div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f'<div style="padding:0.3rem 0 0.5rem;border-bottom:1px solid #242c3d;margin-bottom:0.5rem;">'
-                    f'<span style="font-family:JetBrains Mono,monospace;color:#ffc107;font-weight:700;">{ticker}</span>'
-                    f'<span style="font-size:11px;color:#576070;padding-left:0.75rem;">fetching…</span></div>',
-                    unsafe_allow_html=True,
-                )
-            render_chart(ticker, period, interval, chart_type, overlays, section_name)
+        # Resolve ticker
+        if picked != "— quick pick —":
+            ticker = picked.strip().upper()
+        else:
+            ticker = custom_input.strip().upper() if custom_input.strip() else default_tickers[0]
+
+        # ── ROW 2: chart type + timeframe buttons (full-width toolbar) ───────
+        tb1, tb2 = st.columns([1, 3])
+        with tb1:
+            chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"],
+                                  key=f"ct_{section_name}", horizontal=True)
+        with tb2:
+            tf = st.radio("TIMEFRAME", list(TIMEFRAMES.keys()),
+                          key=f"tf_{section_name}", horizontal=True)
+
+        # ── ROW 3: quote strip ────────────────────────────────────────────────
+        period, interval = TIMEFRAMES[tf]
+        q = fetch_quote(ticker)
+        if q:
+            pct   = q.get("pct", 0)
+            price = q.get("price", 0.0)
+            chg   = q.get("chg", 0.0)
+            chg_col = "#00ff41" if pct >= 0 else "#ff3b3b"
+            arrow   = "▲" if pct >= 0 else "▼"
+            st.markdown(
+                f'<div style="display:flex;align-items:baseline;gap:0.9rem;'
+                f'padding:0.25rem 0.1rem;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">' 
+                f'<span style="font-size:13px;color:#ffb700;font-weight:600;letter-spacing:0.06em;">{ticker}</span>'
+                f'<span style="font-size:18px;color:#ffffff;font-weight:600;">{price:,.4f}</span>'
+                f'<span style="font-size:11px;color:{chg_col};font-weight:500;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
+                f'<span style="font-size:9px;color:#333;margin-left:auto;">15-min delay · yfinance</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<div style="padding:0.2rem 0;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">'
+                f'<span style="font-size:11px;color:#ffb700;font-weight:600;">{ticker}</span>'
+                f'<span style="font-size:9px;color:#444;padding-left:0.6rem;">fetching…</span></div>',
+                unsafe_allow_html=True,
+            )
+
+        # ── ROW 4: full-width chart ────────────────────────────────────────
+        render_chart(ticker, period, interval, chart_type, overlays, section_name)
 
     # ── SCREENER ──────────────────────────────────────────────────────────────
     with sub_tabs[1]:
@@ -1261,65 +1098,63 @@ with tabs[1]:  # CREDIT
 with tabs[2]:  # RATES
     rates_tabs = st.tabs(["CHARTS", "YIELD CURVE", "CPI / INFLATION", "FED POLICY", "NEWS", "FORMULAS"])
     with rates_tabs[0]:
-        # Inline chart panel for RATES — text input + dropdown for full flexibility
         _rt_tickers = EQUITY_TICKERS["RATES"]
-        _col_ctrl, _col_chart = st.columns([1, 5])
-        with _col_ctrl:
-            st.markdown(
-                '<div style="font-size:11px;font-weight:600;color:#576070;'
-                'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">TICKER</div>',
-                unsafe_allow_html=True
-            )
+        # ── ROW 1: ticker input + quick-pick + overlays ──────────────────────
+        _c1, _c2, _c3 = st.columns([2, 2, 2])
+        with _c1:
             _rt_custom = st.text_input(
-                "rates_ticker_label",
-                value=_rt_tickers[0],
-                key="text_RATES_inner",
-                placeholder="e.g. ^TNX, TLT, IEF",
+                "rates_ticker_label", value=_rt_tickers[0],
+                key="text_RATES_inner", placeholder="^TNX, TLT, IEF…",
                 label_visibility="collapsed",
             )
+        with _c2:
             _rt_picked = st.selectbox(
-                "rates_pick_label",
-                ["— quick pick —"] + _rt_tickers,
-                key="pick_RATES_inner",
-                label_visibility="collapsed",
+                "rates_pick_label", ["— quick pick —"] + _rt_tickers,
+                key="pick_RATES_inner", label_visibility="collapsed",
             )
-            _rt_ticker = (_rt_picked.strip().upper()
-                          if _rt_picked != "— quick pick —"
-                          else (_rt_custom.strip().upper() if _rt_custom.strip() else _rt_tickers[0]))
-
-            st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
-            _rt_chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"], key="ct_RATES_inner")
-            _rt_tf = st.radio("TIMEFRAME", list(TIMEFRAMES.keys()), key="tf_RATES_inner")
+        with _c3:
             _rt_overlays = st.multiselect("OVERLAYS",
                 ["SMA 20", "SMA 50", "EMA 20", "Bollinger Bands", "Fibonacci"],
-                key="ov_RATES_inner")
-        with _col_chart:
-            _rt_period, _rt_interval = TIMEFRAMES[_rt_tf]
-            _rt_q = fetch_quote(_rt_ticker)
-            if _rt_q:
-                _rt_pct   = _rt_q.get("pct", 0)
-                _rt_price = _rt_q.get("price", 0.0)
-                _rt_chg   = _rt_q.get("chg", 0.0)
-                _rt_chg_color = "#00e676" if _rt_pct >= 0 else "#ff4757"
-                _rt_arrow = "▲" if _rt_pct >= 0 else "▼"
-                st.markdown(
-                    f'<div style="display:flex;align-items:baseline;gap:1rem;padding:0.2rem 0 0.5rem;'
-                    f'border-bottom:1px solid #242c3d;margin-bottom:0.5rem;flex-wrap:wrap;">'
-                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.05rem;color:#ffc107;font-weight:700;">{_rt_ticker}</span>'
-                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.35rem;color:#ededed;font-weight:700;">{_rt_price:,.4f}</span>'
-                    f'<span style="font-family:JetBrains Mono,monospace;font-size:0.85rem;color:{_rt_chg_color};font-weight:600;">{_rt_arrow} {_rt_chg:+.4f} ({_rt_pct:+.2f}%)</span>'
-                    f'<span style="font-size:11px;color:#576070;margin-left:auto;">15-min delay · yfinance</span>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f'<div style="padding:0.3rem 0 0.5rem;border-bottom:1px solid #242c3d;margin-bottom:0.5rem;">'
-                    f'<span style="font-family:JetBrains Mono,monospace;color:#ffc107;font-weight:700;">{_rt_ticker}</span>'
-                    f'<span style="font-size:11px;color:#576070;padding-left:0.75rem;">fetching…</span></div>',
-                    unsafe_allow_html=True
-                )
-            render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays, "RATES")
+                key="ov_RATES_inner", placeholder="Overlays…")
+
+        _rt_ticker = (_rt_picked.strip().upper()
+                      if _rt_picked != "— quick pick —"
+                      else (_rt_custom.strip().upper() if _rt_custom.strip() else _rt_tickers[0]))
+
+        # ── ROW 2: chart type + timeframe toolbar ────────────────────────────
+        _tb1, _tb2 = st.columns([1, 3])
+        with _tb1:
+            _rt_chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"],
+                                      key="ct_RATES_inner", horizontal=True)
+        with _tb2:
+            _rt_tf = st.radio("TIMEFRAME", list(TIMEFRAMES.keys()),
+                              key="tf_RATES_inner", horizontal=True)
+
+        # ── ROW 3: quote strip ────────────────────────────────────────────────
+        _rt_period, _rt_interval = TIMEFRAMES[_rt_tf]
+        _rt_q = fetch_quote(_rt_ticker)
+        if _rt_q:
+            _rp = _rt_q.get("price", 0.0); _rc = _rt_q.get("chg", 0.0); _rpct = _rt_q.get("pct", 0)
+            _rcol = "#00ff41" if _rpct >= 0 else "#ff3b3b"
+            _rarrow = "▲" if _rpct >= 0 else "▼"
+            st.markdown(
+                f'<div style="display:flex;align-items:baseline;gap:0.9rem;'
+                f'padding:0.25rem 0.1rem;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">'
+                f'<span style="font-size:13px;color:#ffb700;font-weight:600;">{_rt_ticker}</span>'
+                f'<span style="font-size:18px;color:#ffffff;font-weight:600;">{_rp:,.4f}</span>'
+                f'<span style="font-size:11px;color:{_rcol};font-weight:500;">{_rarrow} {_rc:+.4f} ({_rpct:+.2f}%)</span>'
+                f'<span style="font-size:9px;color:#333;margin-left:auto;">15-min delay · yfinance</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<div style="padding:0.2rem 0;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">'
+                f'<span style="font-size:11px;color:#ffb700;font-weight:600;">{_rt_ticker}</span>'
+                f'<span style="font-size:9px;color:#444;padding-left:0.6rem;">fetching…</span></div>',
+                unsafe_allow_html=True,
+            )
+        render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays, "RATES")
     with rates_tabs[1]:
         st.markdown('<div class="bb-section">US TREASURY YIELD CURVE</div>', unsafe_allow_html=True)
         maturities = ["1M","3M","6M","1Y","2Y","3Y","5Y","7Y","10Y","20Y","30Y"]
