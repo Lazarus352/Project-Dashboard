@@ -1061,7 +1061,7 @@ def render_section(section_name: str, default_tickers: list):
                              texttemplate="%{z:+.1f}%")
         fig_hm.update_layout(**PLOTLY_BASE, height=360,
                              coloraxis_showscale=False)
-        st.plotly_chart(fig_hm, use_container_width=True)
+        st.plotly_chart(fig_hm, use_container_width=True, key="credit_heatmap")
 
         # Individual sector charts
         st.markdown('<div class="bb-section">SECTOR ETF PERFORMANCE</div>', unsafe_allow_html=True)
