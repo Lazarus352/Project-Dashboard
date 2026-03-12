@@ -649,7 +649,7 @@ def add_overlays(fig, df: pd.DataFrame, overlays: list):
                           annotation_font_color=col)
     return fig
 
-def render_chart(ticker: str, period: str, interval: str, chart_type: str, overlays: list):
+def render_chart(ticker: str, period: str, interval: str, chart_type: str, overlays: list, section_name: str = "default"):
     df = fetch_ohlcv(ticker, period, interval)
     if df.empty or "Close" not in df.columns:
         st.warning(f"No data available for {ticker}. Try a different timeframe or check the ticker symbol.")
@@ -695,7 +695,7 @@ def render_chart(ticker: str, period: str, interval: str, chart_type: str, overl
     fig_full.update_layout(**layout)
     fig_full.update_xaxes(gridcolor="#0d0d0d", linecolor="#1a1a1a")
     fig_full.update_yaxes(gridcolor="#0d0d0d", linecolor="#1a1a1a")
-    st.plotly_chart(fig_full, use_container_width=True)
+    st.plotly_chart(fig_full, use_container_width=True, key=f"chart_main_{section_name}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MACRO / ECONOMY PLACEHOLDER DATA
@@ -1046,7 +1046,7 @@ def render_section(section_name: str, default_tickers: list):
                     f'<span style="font-size:11px;color:#576070;padding-left:0.75rem;">fetching…</span></div>',
                     unsafe_allow_html=True,
                 )
-            render_chart(ticker, period, interval, chart_type, overlays)
+            render_chart(ticker, period, interval, chart_type, overlays, section_name)
 
     # ── SCREENER ──────────────────────────────────────────────────────────────
     with sub_tabs[1]:
@@ -1110,7 +1110,7 @@ def render_section(section_name: str, default_tickers: list):
                              texttemplate="%{z:+.1f}%")
         fig_hm.update_layout(**PLOTLY_BASE, height=360,
                              coloraxis_showscale=False)
-        st.plotly_chart(fig_hm, use_container_width=True)
+        st.plotly_chart(fig_hm, use_container_width=True, key=f"heatmap_{section_name}")
 
         # Individual sector charts
         st.markdown('<div class="bb-section">SECTOR ETF PERFORMANCE</div>', unsafe_allow_html=True)
@@ -1126,7 +1126,7 @@ def render_section(section_name: str, default_tickers: list):
             fig_bar.update_layout(**PLOTLY_BASE, height=220, showlegend=False,
                                   title="Sector ETFs — Daily % Change")
             fig_bar.add_hline(y=0, line_color="#333333", line_width=0.8)
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, use_container_width=True, key=f"sector_bar_{section_name}")
 
     # ── VOLATILITY ──────────────────────────────────────────────────────────
     with sub_tabs[3]:
@@ -1157,7 +1157,7 @@ def render_section(section_name: str, default_tickers: list):
                                        line=dict(color="#ffab00", width=1.5),
                                        marker=dict(color="#ffab00", size=6)))
         fig_ts.update_layout(**PLOTLY_BASE, height=200, title="VIX Futures Term Structure")
-        st.plotly_chart(fig_ts, use_container_width=True)
+        st.plotly_chart(fig_ts, use_container_width=True, key=f"vix_ts_{section_name}")
 
     # ── NEWS ──────────────────────────────────────────────────────────────────
     with sub_tabs[4]:
@@ -1226,7 +1226,7 @@ def render_section(section_name: str, default_tickers: list):
                                             name=label, line=dict(color="#00b8d4", width=1.5),
                                             fill="tozeroy", fillcolor="rgba(0,184,212,0.05)"))
                 fig_f.update_layout(**PLOTLY_BASE, height=320, title=label)
-                st.plotly_chart(fig_f, use_container_width=True)
+                st.plotly_chart(fig_f, use_container_width=True, key=f"formula_dual_{section_name}")
 
                 summary = pd.DataFrame({
                     "Metric": ["Current","Min","Max","Mean","Std Dev","% from Min","% from Max"],
@@ -1246,7 +1246,7 @@ def render_section(section_name: str, default_tickers: list):
                 fig_f = go.Figure(go.Scatter(x=df_a.index, y=df_a["Close"], mode="lines",
                                               line=dict(color="#00ff41", width=1.5)))
                 fig_f.update_layout(**PLOTLY_BASE, height=320, title=ticker_a)
-                st.plotly_chart(fig_f, use_container_width=True)
+                st.plotly_chart(fig_f, use_container_width=True, key=f"formula_single_{section_name}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1319,7 +1319,7 @@ with tabs[2]:  # RATES
                     f'<span style="font-size:11px;color:#576070;padding-left:0.75rem;">fetching…</span></div>',
                     unsafe_allow_html=True
                 )
-            render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays)
+            render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays, "RATES")
     with rates_tabs[1]:
         st.markdown('<div class="bb-section">US TREASURY YIELD CURVE</div>', unsafe_allow_html=True)
         maturities = ["1M","3M","6M","1Y","2Y","3Y","5Y","7Y","10Y","20Y","30Y"]
@@ -1336,7 +1336,7 @@ with tabs[2]:  # RATES
                                          name=label, line=dict(color=color, width=1.5, dash=dash),
                                          marker=dict(size=5)))
         fig_yc.update_layout(**PLOTLY_BASE, height=360, title="US Treasury Yield Curve")
-        st.plotly_chart(fig_yc, use_container_width=True)
+        st.plotly_chart(fig_yc, use_container_width=True, key="rates_yield_curve")
 
         st.markdown('<div class="bb-section">RATES TABLE</div>', unsafe_allow_html=True)
         df_rates = get_rates_table()
@@ -1364,7 +1364,7 @@ with tabs[2]:  # RATES
         fig_cpi.add_hline(y=2.0, line_dash="dot", line_color="#333333",
                            annotation_text="Fed 2% Target", annotation_font_color="#333333")
         fig_cpi.update_layout(**PLOTLY_BASE, height=340, title="CPI YoY % — Jan 2023 to Present")
-        st.plotly_chart(fig_cpi, use_container_width=True)
+        st.plotly_chart(fig_cpi, use_container_width=True, key="rates_cpi_chart")
 
         col_cpi1, col_cpi2 = st.columns(2)
         with col_cpi1:
@@ -1412,7 +1412,7 @@ with tabs[2]:  # RATES
         fig_fed.add_hline(y=2.0, line_dash="dot", line_color="#333333",
                            annotation_text="Neutral Rate Est.", annotation_font_color="#333333")
         fig_fed.update_layout(**PLOTLY_BASE, height=320, title="Federal Funds Rate Target (Upper Bound)")
-        st.plotly_chart(fig_fed, use_container_width=True)
+        st.plotly_chart(fig_fed, use_container_width=True, key="rates_fed_chart")
 
         st.markdown('<div class="bb-section">NEXT FOMC MEETING</div>', unsafe_allow_html=True)
         fomc_data = pd.DataFrame({
@@ -1456,7 +1456,7 @@ with tabs[7]:  # ECONOMY
                                   marker_color=colors_gdp, name="Real GDP QoQ Ann.%"))
         fig_gdp.add_hline(y=0, line_color="#222222", line_width=0.8)
         fig_gdp.update_layout(**PLOTLY_BASE, height=320, title="US Real GDP — QoQ Annualized %")
-        st.plotly_chart(fig_gdp, use_container_width=True)
+        st.plotly_chart(fig_gdp, use_container_width=True, key="econ_gdp_chart")
 
         col_g1, col_g2 = st.columns(2)
         with col_g1:
@@ -1485,7 +1485,7 @@ with tabs[7]:  # ECONOMY
                                        mode="lines", line=dict(color="#ffab00", width=1.5),
                                        name="Unemployment %"), row=2, col=1)
         fig_jobs.update_layout(**PLOTLY_BASE, height=400, title="Nonfarm Payrolls & Unemployment Rate")
-        st.plotly_chart(fig_jobs, use_container_width=True)
+        st.plotly_chart(fig_jobs, use_container_width=True, key="econ_jobs_chart")
         st.dataframe(df_jobs.tail(12).style.format({"Unemployment %":"{:.1f}%","Participation %":"{:.1f}%","JOLTS (M)":"{:.1f}M"}),
                      use_container_width=True, hide_index=True)
 
@@ -1503,7 +1503,7 @@ with tabs[7]:  # ECONOMY
         fig_inf.add_hline(y=2.0, line_dash="dot", line_color="#222222",
                            annotation_text="2%", annotation_font_color="#444444")
         fig_inf.update_layout(**PLOTLY_BASE, height=340, title="US Inflation Gauges vs Fed Target")
-        st.plotly_chart(fig_inf, use_container_width=True)
+        st.plotly_chart(fig_inf, use_container_width=True, key="econ_inf_chart")
 
     with econ_tabs[3]:
         st.markdown('<div class="bb-section">LEADING ECONOMIC INDICATORS</div>', unsafe_allow_html=True)
@@ -1591,7 +1591,7 @@ with tabs[8]:  # GEOPOLITICS
                           for v in geo_risks["Risk Score (0-10)"]],
         ))
         fig_geo.update_layout(**PLOTLY_BASE, height=280, title="Geopolitical Risk Scores")
-        st.plotly_chart(fig_geo, use_container_width=True)
+        st.plotly_chart(fig_geo, use_container_width=True, key="geo_risk_chart")
 
     with geo_tabs[1]:
         st.markdown('<div class="bb-section">SAFE HAVEN ASSETS — LIVE</div>', unsafe_allow_html=True)
