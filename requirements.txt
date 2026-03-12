@@ -4,3 +4,4 @@ plotly>=5.18.0
 yfinance>=0.2.36
 PyPDF2>=3.0.0
 openpyxl>=3.1.0
+matplotlib
