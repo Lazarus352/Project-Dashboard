@@ -580,7 +580,13 @@ def fetch_ohlcv(ticker: str, period: str, interval: str) -> pd.DataFrame:
                          auto_adjust=True, progress=False)
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
-        df = df.dropna()
+        # Deduplicate columns that yfinance sometimes returns doubled
+        df = df.loc[:, ~df.columns.duplicated()]
+        df = df.dropna(how="all")
+        # Ensure standard OHLCV columns exist
+        for col in ["Open", "High", "Low", "Close", "Volume"]:
+            if col not in df.columns and len(df.columns) >= 1:
+                pass  # partial data is ok — render_chart checks for Close
         return df
     except Exception:
         return pd.DataFrame()
@@ -601,7 +607,7 @@ def fetch_quote(ticker: str) -> dict:
         return {}
 
 @st.cache_data(ttl=300, show_spinner=False)
-def fetch_bulk_quotes(tickers: list) -> dict:
+def fetch_bulk_quotes(tickers: tuple) -> dict:
     results = {}
     for t in tickers:
         q = fetch_quote(t)
@@ -645,8 +651,8 @@ def add_overlays(fig, df: pd.DataFrame, overlays: list):
 
 def render_chart(ticker: str, period: str, interval: str, chart_type: str, overlays: list):
     df = fetch_ohlcv(ticker, period, interval)
-    if df.empty:
-        st.warning(f"No data for {ticker}")
+    if df.empty or "Close" not in df.columns:
+        st.warning(f"No data available for {ticker}. Try a different timeframe or check the ticker symbol.")
         return
 
     layout = dict(**PLOTLY_BASE)
@@ -880,7 +886,7 @@ with st.sidebar:
 
     # Fetch all watchlist quotes
     if HAS_YF:
-        wl_quotes = fetch_bulk_quotes(st.session_state.watchlist)
+        wl_quotes = fetch_bulk_quotes(tuple(st.session_state.watchlist))
     else:
         wl_quotes = {}
 
@@ -993,7 +999,7 @@ def render_section(section_name: str, default_tickers: list):
                 st.markdown(f"""
                 <div style="display:flex;align-items:baseline;gap:1rem;padding:0.2rem 0 0.5rem;border-bottom:1px solid #1a1a1a;margin-bottom:0.5rem;">
                   <span style="font-size:1.1rem;color:#ffab00;font-weight:700;letter-spacing:0.05em;">{ticker}</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:1.35rem;color:#ededed;font-weight:700;">{price:,}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:1.35rem;color:#ededed;font-weight:700;">{price:,.4f}</span>
                   <span style="font-size:0.85rem;color:{chg_color};font-weight:600;">{arrow} {chg:+.4f} &nbsp; ({pct:+.2f}%)</span>
                   <span style="font-size:0.6rem;color:#333333;margin-left:auto;">15min delay · yfinance</span>
                 </div>""", unsafe_allow_html=True)
@@ -1003,7 +1009,7 @@ def render_section(section_name: str, default_tickers: list):
     with sub_tabs[1]:
         st.markdown('<div class="bb-section">SCREENER — TOP MOVERS</div>', unsafe_allow_html=True)
         if HAS_YF:
-            screener_quotes = fetch_bulk_quotes(default_tickers[:12])
+            screener_quotes = fetch_bulk_quotes(tuple(default_tickers[:12]))
             rows = []
             for t, q in screener_quotes.items():
                 rows.append({
@@ -1023,7 +1029,7 @@ def render_section(section_name: str, default_tickers: list):
                 st.dataframe(
                     df_sc.style
                         .format({"Price": "{:.4f}", "Chg": "{:+.4f}", "Chg %": "{:+.2f}%"})
-                        .applymap(color_pct, subset=["Chg %", "Chg"]),
+                        .map(color_pct, subset=["Chg %", "Chg"]),
                     use_container_width=True, hide_index=True, height=400
                 )
         else:
@@ -1033,10 +1039,10 @@ def render_section(section_name: str, default_tickers: list):
         st.markdown('<div class="bb-section">TOP HOLDINGS / WEIGHTS</div>', unsafe_allow_html=True)
         holdings_data = {
             "Name":   [t.replace("=F","").replace("-USD","").replace("=X","")
-                       for t in default_tickers[:8]],
-            "Symbol": default_tickers[:8],
-            "Weight": sorted([round(random.uniform(3, 18), 2) for _ in range(8)], reverse=True),
-            "3M Ret": [round(random.gauss(3, 8), 2) for _ in range(8)],
+                       for t in default_tickers[:min(8,len(default_tickers))]],
+            "Symbol": default_tickers[:min(8,len(default_tickers))],
+            "Weight": sorted([round(random.uniform(3, 18), 2) for _ in range(min(8,len(default_tickers)))], reverse=True),
+            "3M Ret": [round(random.gauss(3, 8), 2) for _ in range(min(8,len(default_tickers)))],
         }
         df_hold = pd.DataFrame(holdings_data)
         st.dataframe(df_hold.style.format({"Weight":"{:.2f}%","3M Ret":"{:+.2f}%"})
@@ -1061,13 +1067,13 @@ def render_section(section_name: str, default_tickers: list):
                              texttemplate="%{z:+.1f}%")
         fig_hm.update_layout(**PLOTLY_BASE, height=360,
                              coloraxis_showscale=False)
-        st.plotly_chart(fig_hm, use_container_width=True, key="credit_heatmap")
+        st.plotly_chart(fig_hm, use_container_width=True)
 
         # Individual sector charts
         st.markdown('<div class="bb-section">SECTOR ETF PERFORMANCE</div>', unsafe_allow_html=True)
         sector_etfs = ["XLK","XLF","XLE","XLV","XLI","XLY","XLP","XLU","XLRE","XLB","XLC"]
         if HAS_YF:
-            sector_quotes = fetch_bulk_quotes(sector_etfs)
+            sector_quotes = fetch_bulk_quotes(tuple(sector_etfs))
             sc_rows = [{"ETF": t, "Price": q.get("price","—"), "Chg %": q.get("pct",0)}
                        for t, q in sector_quotes.items()]
             df_sec = pd.DataFrame(sc_rows)
@@ -1096,7 +1102,7 @@ def render_section(section_name: str, default_tickers: list):
                 .format({"VIX/Vol": "{:.1f}", "30D HV": "{:.1f}",
                          "IV Rank %": "{:.0f}", "IV Percentile": "{:.0f}",
                          "Put/Call": "{:.2f}"})
-                .applymap(color_vix, subset=["VIX/Vol"]),
+                .map(color_vix, subset=["VIX/Vol"]),
             use_container_width=True, hide_index=True
         )
 
@@ -1210,10 +1216,36 @@ with tabs[1]:  # CREDIT
     render_section("CREDIT", EQUITY_TICKERS["CREDIT"])
 
 with tabs[2]:  # RATES
-    st.tabs_inner = st.tabs(["CHARTS", "YIELD CURVE", "CPI / INFLATION", "FED POLICY", "NEWS", "FORMULAS"])
-    with st.tabs_inner[0]:
-        render_section("RATES", EQUITY_TICKERS["RATES"])
-    with st.tabs_inner[1]:
+    rates_tabs = st.tabs(["CHARTS", "YIELD CURVE", "CPI / INFLATION", "FED POLICY", "NEWS", "FORMULAS"])
+    with rates_tabs[0]:
+        # Inline chart panel — avoids nested st.tabs depth error
+        _rt_tickers = EQUITY_TICKERS["RATES"]
+        _col_ctrl, _col_chart = st.columns([1, 5])
+        with _col_ctrl:
+            _rt_ticker = st.selectbox("TICKER", _rt_tickers, key="ticker_RATES_inner")
+            _rt_chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"], key="ct_RATES_inner")
+            _rt_tf = st.radio("TIMEFRAME", list(TIMEFRAMES.keys()), key="tf_RATES_inner")
+            _rt_overlays = st.multiselect("OVERLAYS",
+                ["SMA 20", "SMA 50", "EMA 20", "Bollinger Bands", "Fibonacci"],
+                key="ov_RATES_inner")
+        with _col_chart:
+            _rt_period, _rt_interval = TIMEFRAMES[_rt_tf]
+            _rt_q = fetch_quote(_rt_ticker)
+            if _rt_q:
+                _rt_pct = _rt_q.get("pct", 0)
+                _rt_price = _rt_q.get("price", 0)
+                _rt_chg = _rt_q.get("chg", 0)
+                _rt_chg_color = "#00e676" if _rt_pct >= 0 else "#ff4757"
+                _rt_arrow = "▲" if _rt_pct >= 0 else "▼"
+                st.markdown(f"""
+                <div style="display:flex;align-items:baseline;gap:1rem;padding:0.2rem 0 0.5rem;border-bottom:1px solid #242c3d;margin-bottom:0.5rem;">
+                  <span style="font-size:1.1rem;color:#ffc107;font-weight:700;">{_rt_ticker}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:1.35rem;color:#ededed;font-weight:700;">{_rt_price:.4f}</span>
+                  <span style="font-size:0.85rem;color:{_rt_chg_color};font-weight:600;">{_rt_arrow} {_rt_chg:+.4f} ({_rt_pct:+.2f}%)</span>
+                  <span style="font-size:0.6rem;color:#576070;margin-left:auto;">15min delay · yfinance</span>
+                </div>""", unsafe_allow_html=True)
+            render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays)
+    with rates_tabs[1]:
         st.markdown('<div class="bb-section">US TREASURY YIELD CURVE</div>', unsafe_allow_html=True)
         maturities = ["1M","3M","6M","1Y","2Y","3Y","5Y","7Y","10Y","20Y","30Y"]
         yields_current = [4.31, 4.28, 4.18, 4.02, 3.95, 3.90, 3.84, 3.90, 4.21, 4.52, 4.52]
@@ -1240,10 +1272,10 @@ with tabs[2]:  # RATES
                 if val < 0: return "color: #00ff41"
             return "color: #555555"
 
-        st.dataframe(df_rates.style.applymap(color_bps, subset=["Chg (bps)"]),
+        st.dataframe(df_rates.style.map(color_bps, subset=["Chg (bps)"]),
                      use_container_width=True, hide_index=True)
 
-    with st.tabs_inner[2]:
+    with rates_tabs[2]:
         # CPI section
         st.markdown('<div class="bb-section">CPI — CONSUMER PRICE INDEX</div>', unsafe_allow_html=True)
         df_cpi = get_cpi_data()
@@ -1287,11 +1319,11 @@ with tabs[2]:  # RATES
                 return "color: #00ff41"
             return ""
 
-        st.dataframe(components.style.applymap(color_yoy, subset=["YoY %","3M Ann %"])
+        st.dataframe(components.style.map(color_yoy, subset=["YoY %","3M Ann %"])
                      .format({"Weight %":"{:.1f}","YoY %":"{:.1f}%","MoM %":"{:+.1f}%","3M Ann %":"{:.1f}%"}),
                      use_container_width=True, hide_index=True)
 
-    with st.tabs_inner[3]:
+    with rates_tabs[3]:
         st.markdown('<div class="bb-section">FED POLICY TIMELINE</div>', unsafe_allow_html=True)
         fed_dates = ["Mar'22","May'22","Jun'22","Jul'22","Sep'22","Nov'22","Dec'22",
                      "Feb'23","Mar'23","May'23","Jun'23","Jul'23","Sep'23","Nov'23",
@@ -1316,12 +1348,12 @@ with tabs[2]:  # RATES
         })
         st.dataframe(fomc_data, use_container_width=True, hide_index=True)
 
-    with st.tabs_inner[4]:
+    with rates_tabs[4]:
         for h, a, tags in get_placeholder_news("RATES"):
             tags_html = "".join(f'<span class="news-tag">{t}</span>' for t in tags)
             st.markdown(f'<div class="news-card"><div class="news-headline">{h}</div><div class="news-meta">{tags_html} {a} ago</div></div>', unsafe_allow_html=True)
 
-    with st.tabs_inner[5]:
+    with rates_tabs[5]:
         st.info("See FORMULAS tab in any section's sub-navigation.")
 
 with tabs[3]:  # FX
@@ -1378,8 +1410,6 @@ with tabs[7]:  # ECONOMY
                                        mode="lines", line=dict(color="#ffab00", width=1.5),
                                        name="Unemployment %"), row=2, col=1)
         fig_jobs.update_layout(**PLOTLY_BASE, height=400, title="Nonfarm Payrolls & Unemployment Rate")
-        fig_jobs.update_xaxes(gridcolor="#0d0d0d")
-        fig_jobs.update_yaxes(gridcolor="#0d0d0d")
         st.plotly_chart(fig_jobs, use_container_width=True)
         st.dataframe(df_jobs.tail(12).style.format({"Unemployment %":"{:.1f}%","Participation %":"{:.1f}%","JOLTS (M)":"{:.1f}M"}),
                      use_container_width=True, hide_index=True)
