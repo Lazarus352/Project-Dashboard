@@ -591,7 +591,7 @@ def fetch_ohlcv(ticker: str, period: str, interval: str) -> pd.DataFrame:
     except Exception:
         return pd.DataFrame()
 
-@st.cache_data(ttl=120, show_spinner=False)
+@st.cache_data(ttl=30, show_spinner=False)
 def fetch_quote(ticker: str) -> dict:
     if not HAS_YF:
         return {}
@@ -975,34 +975,77 @@ def render_section(section_name: str, default_tickers: list):
 
     sub_tabs = st.tabs(["CHARTS", "SCREENER", "HEATMAP", "VOLATILITY", "NEWS", "FORMULAS"])
 
+
     # ── CHARTS ──────────────────────────────────────────────────────────────
     with sub_tabs[0]:
         col_ctrl, col_chart = st.columns([1, 5])
         with col_ctrl:
-            ticker = st.selectbox("TICKER", default_tickers, key=f"ticker_{section_name}")
+            # ── Ticker: type ANY symbol OR quick-pick from the section list ─
+            st.markdown(
+                '<div style="font-size:11px;font-weight:600;color:#576070;'
+                'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">TICKER</div>',
+                unsafe_allow_html=True,
+            )
+            # Free-text box — accepts any ticker yfinance supports
+            custom_input = st.text_input(
+                "ticker_text_label",
+                value=default_tickers[0],
+                key=f"text_{section_name}",
+                placeholder="e.g. NVDA, TSLA, BTC-USD",
+                label_visibility="collapsed",
+            )
+            # Quick-pick dropdown — selecting this overrides the text box
+            picked = st.selectbox(
+                "ticker_pick_label",
+                ["— quick pick —"] + default_tickers,
+                key=f"pick_{section_name}",
+                label_visibility="collapsed",
+            )
+            # Dropdown wins if user picked something; else use the text box
+            if picked != "— quick pick —":
+                ticker = picked.strip().upper()
+            else:
+                ticker = custom_input.strip().upper() if custom_input.strip() else default_tickers[0]
+
+            st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
             chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"], key=f"ct_{section_name}")
             tf = st.radio("TIMEFRAME", list(TIMEFRAMES.keys()), key=f"tf_{section_name}")
-            overlays = st.multiselect("OVERLAYS",
+            overlays = st.multiselect(
+                "OVERLAYS",
                 ["SMA 20", "SMA 50", "EMA 20", "Bollinger Bands", "Fibonacci"],
-                key=f"ov_{section_name}")
+                key=f"ov_{section_name}",
+            )
 
         with col_chart:
             period, interval = TIMEFRAMES[tf]
-            # Quote strip
             q = fetch_quote(ticker)
             if q:
                 pct   = q.get("pct", 0)
-                price = q.get("price", "—")
-                chg   = q.get("chg", 0)
-                chg_color = "#00ff41" if pct >= 0 else "#ff1744"
+                price = q.get("price", 0.0)
+                chg   = q.get("chg", 0.0)
+                chg_color = "#00e676" if pct >= 0 else "#ff4757"
                 arrow = "▲" if pct >= 0 else "▼"
-                st.markdown(f"""
-                <div style="display:flex;align-items:baseline;gap:1rem;padding:0.2rem 0 0.5rem;border-bottom:1px solid #1a1a1a;margin-bottom:0.5rem;">
-                  <span style="font-size:1.1rem;color:#ffab00;font-weight:700;letter-spacing:0.05em;">{ticker}</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:1.35rem;color:#ededed;font-weight:700;">{price:,.4f}</span>
-                  <span style="font-size:0.85rem;color:{chg_color};font-weight:600;">{arrow} {chg:+.4f} &nbsp; ({pct:+.2f}%)</span>
-                  <span style="font-size:0.6rem;color:#333333;margin-left:auto;">15min delay · yfinance</span>
-                </div>""", unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="display:flex;align-items:baseline;gap:1rem;'
+                    f'padding:0.2rem 0 0.5rem;border-bottom:1px solid #242c3d;'
+                    f'margin-bottom:0.5rem;flex-wrap:wrap;">'
+                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.05rem;'
+                    f'color:#ffc107;font-weight:700;">{ticker}</span>'
+                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.35rem;'
+                    f'color:#ededed;font-weight:700;">{price:,.4f}</span>'
+                    f'<span style="font-family:JetBrains Mono,monospace;font-size:0.85rem;'
+                    f'color:{chg_color};font-weight:600;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
+                    f'<span style="font-size:11px;color:#576070;margin-left:auto;">'
+                    f'15-min delay · yfinance</span></div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f'<div style="padding:0.3rem 0 0.5rem;border-bottom:1px solid #242c3d;margin-bottom:0.5rem;">'
+                    f'<span style="font-family:JetBrains Mono,monospace;color:#ffc107;font-weight:700;">{ticker}</span>'
+                    f'<span style="font-size:11px;color:#576070;padding-left:0.75rem;">fetching…</span></div>',
+                    unsafe_allow_html=True,
+                )
             render_chart(ticker, period, interval, chart_type, overlays)
 
     # ── SCREENER ──────────────────────────────────────────────────────────────
@@ -1218,11 +1261,33 @@ with tabs[1]:  # CREDIT
 with tabs[2]:  # RATES
     rates_tabs = st.tabs(["CHARTS", "YIELD CURVE", "CPI / INFLATION", "FED POLICY", "NEWS", "FORMULAS"])
     with rates_tabs[0]:
-        # Inline chart panel — avoids nested st.tabs depth error
+        # Inline chart panel for RATES — text input + dropdown for full flexibility
         _rt_tickers = EQUITY_TICKERS["RATES"]
         _col_ctrl, _col_chart = st.columns([1, 5])
         with _col_ctrl:
-            _rt_ticker = st.selectbox("TICKER", _rt_tickers, key="ticker_RATES_inner")
+            st.markdown(
+                '<div style="font-size:11px;font-weight:600;color:#576070;'
+                'letter-spacing:0.1em;text-transform:uppercase;margin-bottom:2px;">TICKER</div>',
+                unsafe_allow_html=True
+            )
+            _rt_custom = st.text_input(
+                "rates_ticker_label",
+                value=_rt_tickers[0],
+                key="text_RATES_inner",
+                placeholder="e.g. ^TNX, TLT, IEF",
+                label_visibility="collapsed",
+            )
+            _rt_picked = st.selectbox(
+                "rates_pick_label",
+                ["— quick pick —"] + _rt_tickers,
+                key="pick_RATES_inner",
+                label_visibility="collapsed",
+            )
+            _rt_ticker = (_rt_picked.strip().upper()
+                          if _rt_picked != "— quick pick —"
+                          else (_rt_custom.strip().upper() if _rt_custom.strip() else _rt_tickers[0]))
+
+            st.markdown('<div style="height:4px"></div>', unsafe_allow_html=True)
             _rt_chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"], key="ct_RATES_inner")
             _rt_tf = st.radio("TIMEFRAME", list(TIMEFRAMES.keys()), key="tf_RATES_inner")
             _rt_overlays = st.multiselect("OVERLAYS",
@@ -1232,18 +1297,28 @@ with tabs[2]:  # RATES
             _rt_period, _rt_interval = TIMEFRAMES[_rt_tf]
             _rt_q = fetch_quote(_rt_ticker)
             if _rt_q:
-                _rt_pct = _rt_q.get("pct", 0)
-                _rt_price = _rt_q.get("price", 0)
-                _rt_chg = _rt_q.get("chg", 0)
+                _rt_pct   = _rt_q.get("pct", 0)
+                _rt_price = _rt_q.get("price", 0.0)
+                _rt_chg   = _rt_q.get("chg", 0.0)
                 _rt_chg_color = "#00e676" if _rt_pct >= 0 else "#ff4757"
                 _rt_arrow = "▲" if _rt_pct >= 0 else "▼"
-                st.markdown(f"""
-                <div style="display:flex;align-items:baseline;gap:1rem;padding:0.2rem 0 0.5rem;border-bottom:1px solid #242c3d;margin-bottom:0.5rem;">
-                  <span style="font-size:1.1rem;color:#ffc107;font-weight:700;">{_rt_ticker}</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:1.35rem;color:#ededed;font-weight:700;">{_rt_price:.4f}</span>
-                  <span style="font-size:0.85rem;color:{_rt_chg_color};font-weight:600;">{_rt_arrow} {_rt_chg:+.4f} ({_rt_pct:+.2f}%)</span>
-                  <span style="font-size:0.6rem;color:#576070;margin-left:auto;">15min delay · yfinance</span>
-                </div>""", unsafe_allow_html=True)
+                st.markdown(
+                    f'<div style="display:flex;align-items:baseline;gap:1rem;padding:0.2rem 0 0.5rem;'
+                    f'border-bottom:1px solid #242c3d;margin-bottom:0.5rem;flex-wrap:wrap;">'
+                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.05rem;color:#ffc107;font-weight:700;">{_rt_ticker}</span>'
+                    f'<span style="font-family:JetBrains Mono,monospace;font-size:1.35rem;color:#ededed;font-weight:700;">{_rt_price:,.4f}</span>'
+                    f'<span style="font-family:JetBrains Mono,monospace;font-size:0.85rem;color:{_rt_chg_color};font-weight:600;">{_rt_arrow} {_rt_chg:+.4f} ({_rt_pct:+.2f}%)</span>'
+                    f'<span style="font-size:11px;color:#576070;margin-left:auto;">15-min delay · yfinance</span>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f'<div style="padding:0.3rem 0 0.5rem;border-bottom:1px solid #242c3d;margin-bottom:0.5rem;">'
+                    f'<span style="font-family:JetBrains Mono,monospace;color:#ffc107;font-weight:700;">{_rt_ticker}</span>'
+                    f'<span style="font-size:11px;color:#576070;padding-left:0.75rem;">fetching…</span></div>',
+                    unsafe_allow_html=True
+                )
             render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays)
     with rates_tabs[1]:
         st.markdown('<div class="bb-section">US TREASURY YIELD CURVE</div>', unsafe_allow_html=True)
