@@ -920,33 +920,43 @@ def render_chart(ticker: str, period: str, interval: str, chart_type: str,
                  overlays: list, section_name: str = "default",
                  chart_slot=None):
     """
-    Gap-free chart rendering.
+    Gap-free chart rendering — two-layer strategy:
 
-    Strategy: store the built figure in session_state under a stable key,
-    then emit st.plotly_chart with that SAME stable key every run.
-    Streamlit detects the matching key and patches the existing DOM element
-    in-place rather than removing + re-adding it — this eliminates the
-    white flash / layout gap that occurs on timeframe / ticker changes.
+    Layer 1 — fixed-height container:
+        st.container(height=516, border=False) reserves a fixed-height DOM
+        region that NEVER collapses or expands.  The surrounding layout is
+        completely stable regardless of what's rendered inside.
+
+    Layer 2 — stable key on st.plotly_chart:
+        The identical key across reruns tells Streamlit to PATCH the existing
+        Plotly WebGL canvas in-place instead of unmounting + remounting it.
+        No DOM removal means no white flash between timeframe switches.
+
+    Together these eliminate both the layout-shift gap AND the flash.
     """
-    fig_key = f"fig_{section_name}"
+    fig_key   = f"fig_{section_name}"
     chart_key = f"chart_main_{section_name}"
 
     fig = build_chart_figure(ticker, period, interval, chart_type, overlays)
     if fig is None:
-        msg = f"No data for **{ticker}** ({period}/{interval}). Try a different timeframe."
-        st.warning(msg)
+        # Show warning inside a same-height container so layout stays stable
+        with st.container(height=516, border=False):
+            st.warning(
+                f"No data for **{ticker}** ({period}/{interval}). "
+                "Try a different timeframe."
+            )
         return
 
-    # Persist figure so it survives reruns triggered by OTHER widgets
+    # Store in session_state so it survives reruns from other widgets
     st.session_state[fig_key] = fig
 
-    # Always render from session_state so the key is stable and Streamlit
-    # patches the element rather than replacing it.
-    st.plotly_chart(
-        st.session_state[fig_key],
-        use_container_width=True,
-        key=chart_key,
-    )
+    # Render inside fixed-height container — layout never shifts
+    with st.container(height=516, border=False):
+        st.plotly_chart(
+            st.session_state[fig_key],
+            use_container_width=True,
+            key=chart_key,
+        )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MACRO / ECONOMY PLACEHOLDER DATA
