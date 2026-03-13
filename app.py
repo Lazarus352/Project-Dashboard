@@ -61,58 +61,353 @@ st.set_page_config(
 # ══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-/* ── Fonts: IBM Plex Mono everywhere — true terminal aesthetic ── */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+/* ── Fonts: Inter for UI, IBM Plex Mono for data ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-/* ══ TOKENS ═══════════════════════════════════════════════════════════════ */
+/* ══ DESIGN TOKENS ══════════════════════════════════════════════════════════ */
 :root {
-  --bg:      #000000;   /* pure black — maximum contrast */
-  --bg1:     #0a0a0a;
-  --bg2:     #111111;
-  --bg3:     #171717;
-  --border:  #1e1e1e;
-  --border2: #252525;
+  --bg:      #0A0A0A;
+  --bg1:     #0e0e0e;
+  --bg2:     #141414;
+  --bg3:     #1a1a1a;
+  --border:  #202020;
+  --border2: #2a2a2a;
 
-  /* Accent */
-  --green:      #00ff41;
-  --green-dim:  #00c030;
-  --green-dark: #001a08;
-  --red:        #ff3b3b;
+  --green:      #00FFAA;
+  --green-dim:  #00cc88;
+  --green-dark: #001a0d;
+  --red:        #FF4444;
   --red-dark:   #1a0000;
-  --amber:      #ffb700;
-  --blue:       #00b8d4;
+  --amber:      #FFB700;
+  --blue:       #29B6F6;
 
-  /* Text — crisp white hierarchy on black */
-  --text-hi:    #ffffff;   /* ticker symbols, hero numbers  */
-  --text-body:  #cccccc;   /* body, table values            */
-  --text-dim:   #666666;   /* labels, captions              */
-  --text-ghost: #333333;   /* barely-visible dividers       */
+  /* ── TEXT — crisp, high contrast ── */
+  --text-hi:    #FFFFFF;    /* headings, hero numbers   */
+  --text-body:  #F0F0F0;    /* body text, table values  */
+  --text-mid:   #B0B0B0;    /* labels, captions         */
+  --text-dim:   #606060;    /* muted, placeholders      */
+  --text-ghost: #2a2a2a;
 
-  /* Typography — one font family, size scale in px */
-  --font: 'IBM Plex Mono', 'Menlo', 'Consolas', monospace;
+  /* ── FONTS ── */
+  --font-ui:   'Inter', 'Segoe UI', 'Roboto', -apple-system, sans-serif;
+  --font-data: 'IBM Plex Mono', 'Menlo', 'Consolas', monospace;
+
+  /* ── SIZE SCALE ── */
   --f8:  8px;
   --f9:  9px;
   --f10: 10px;
   --f11: 11px;
   --f12: 12px;
   --f13: 13px;
-  --f18: 18px;   /* hero price */
+  --f14: 14px;
+  --f15: 15px;
+  --f18: 18px;
+  --f22: 22px;
 }
 
-/* ══ GLOBAL RESET ═════════════════════════════════════════════════════════ */
-html, body,
+/* ══ GLOBAL RESET ════════════════════════════════════════════════════════════ */
+html, body {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f14) !important;
+  background: var(--bg) !important;
+  color: var(--text-body) !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+}
 [class*="css"], [class*="st-"], .element-container,
-p, div, span, li, td, th, label, input, textarea, select, button {
-  font-family: var(--font) !important;
+p, div, span, li, label, input, textarea, select, button {
+  font-family: var(--font-ui) !important;
   -webkit-font-smoothing: antialiased !important;
   text-rendering: optimizeLegibility !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: 0.25px !important;
+  line-height: 1.4 !important;
+  color: var(--text-body) !important;
 }
-html, body { font-size: var(--f11) !important; }
+/* Data elements use mono */
+td, th,
+[data-testid="stDataFrame"] *,
+[data-testid="stMetric"] * {
+  font-family: var(--font-data) !important;
+}
 .stApp { background: var(--bg) !important; }
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding: 0 !important; max-width: 100% !important; }
 .stDeployButton { display: none !important; }
+[data-testid="stDecoration"] { display: none !important; }
+
+/* ══ SIDEBAR ═════════════════════════════════════════════════════════════════ */
+section[data-testid="stSidebar"] {
+  background: var(--bg1) !important;
+  border-right: 1px solid var(--border2) !important;
+}
+section[data-testid="stSidebar"] > div { padding: 0.6rem 0.5rem !important; }
+
+/* ══ TOP BAR ══════════════════════════════════════════════════════════════════ */
+.top-bar {
+  background: var(--bg1);
+  border-bottom: 1px solid var(--border2);
+  padding: 0.3rem 0.9rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 999;
+}
+.top-logo {
+  font-family: var(--font-ui); font-size: var(--f11); font-weight: 700;
+  color: var(--green); letter-spacing: 0.22em; text-transform: uppercase;
+}
+.top-time { font-family: var(--font-data); font-size: var(--f9); color: var(--text-dim); }
+.tick-up   { color: var(--green) !important; font-weight: 600 !important; }
+.tick-down { color: var(--red)   !important; font-weight: 600 !important; }
+
+/* ══ MAIN NAV TABS ════════════════════════════════════════════════════════════ */
+.stTabs [data-baseweb="tab-list"] {
+  background: var(--bg1) !important;
+  border-bottom: 1px solid var(--border2) !important;
+  gap: 0 !important; padding: 0 !important;
+}
+.stTabs [data-baseweb="tab"] {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f11) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+  color: var(--text-mid) !important;
+  padding: 0.6rem 1.1rem !important;
+  border-right: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  text-transform: uppercase !important;
+}
+.stTabs [aria-selected="true"] {
+  background: var(--bg2) !important;
+  color: var(--green) !important;
+  border-top: 2px solid var(--green) !important;
+}
+.stTabs [data-baseweb="tab-panel"] {
+  background: var(--bg) !important;
+  padding: 0.6rem 0.75rem 2rem !important;
+}
+
+/* ══ RADIO — compact horizontal toolbar ══════════════════════════════════════ */
+.stRadio > div {
+  display: flex !important; flex-direction: row !important;
+  gap: 0 !important; flex-wrap: wrap !important;
+}
+.stRadio > div > label {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f10) !important; font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  padding: 0.25rem 0.65rem !important;
+  border: 1px solid var(--border2) !important;
+  color: var(--text-mid) !important;
+  cursor: pointer !important; background: var(--bg1) !important;
+  margin: 0 !important; text-transform: uppercase !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+.stRadio > div > label:has(input:checked) {
+  color: var(--green) !important;
+  border-color: var(--green) !important;
+  background: var(--green-dark) !important;
+  font-weight: 700 !important;
+}
+.stRadio > div > label > div:first-child { display: none !important; }
+div[data-testid="stRadio"] > label { display: none !important; }
+
+/* ══ SELECTBOX ════════════════════════════════════════════════════════════════ */
+.stSelectbox > div > div {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border2) !important;
+  color: var(--text-body) !important;
+  font-family: var(--font-ui) !important;
+  font-size: var(--f12) !important;
+  border-radius: 2px !important;
+}
+.stSelectbox label { display: none !important; }
+
+/* ══ TEXT INPUT ═══════════════════════════════════════════════════════════════ */
+.stTextInput > div > div {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border2) !important;
+  border-radius: 2px !important;
+  color: var(--text-hi) !important;
+  font-family: var(--font-data) !important;
+  font-size: var(--f12) !important;
+}
+.stTextInput label {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f10) !important; font-weight: 600 !important;
+  color: var(--text-mid) !important;
+  letter-spacing: 0.12em !important; text-transform: uppercase !important;
+}
+
+/* ══ MULTISELECT ══════════════════════════════════════════════════════════════ */
+.stMultiSelect > div { background: var(--bg2) !important; border-radius: 2px !important; }
+.stMultiSelect label {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f10) !important; color: var(--text-mid) !important;
+}
+
+/* ══ SECTION LABELS ═══════════════════════════════════════════════════════════ */
+.bb-section {
+  font-family: var(--font-ui);
+  font-size: var(--f10); font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-mid) !important;
+  border-left: 2px solid var(--green);
+  padding-left: 0.5rem;
+  margin: 0.8rem 0 0.4rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══ DATA TABLES ══════════════════════════════════════════════════════════════ */
+.stDataFrame { border: 1px solid var(--border2) !important; }
+[data-testid="stDataFrame"] th,
+[data-testid="stDataFrame"] [data-testid="glideDataEditor"] .gdg-header {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f10) !important; font-weight: 700 !important;
+  color: var(--text-mid) !important;
+  background: var(--bg2) !important;
+  letter-spacing: 0.1em !important; text-transform: uppercase !important;
+}
+[data-testid="stDataFrame"] td,
+[data-testid="stDataFrame"] [data-testid="glideDataEditor"] .gdg-cell {
+  font-family: var(--font-data) !important;
+  font-size: var(--f11) !important;
+  color: var(--text-body) !important;
+}
+[data-testid="stDataFrame"] * { -webkit-font-smoothing: antialiased !important; }
+
+/* ══ BUTTONS ══════════════════════════════════════════════════════════════════ */
+.stButton > button {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f10) !important; font-weight: 700 !important;
+  letter-spacing: 0.1em !important; text-transform: uppercase !important;
+  background: var(--bg2) !important;
+  color: var(--green) !important;
+  border: 1px solid var(--green) !important;
+  border-radius: 2px !important;
+  padding: 0.28rem 0.85rem !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+.stButton > button:hover { background: var(--green-dark) !important; }
+
+/* ══ NEWS CARD — clickable headlines ═════════════════════════════════════════ */
+.news-card {
+  padding: 0.55rem 0.7rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  transition: background 0.1s;
+}
+.news-card:hover { background: var(--bg2); }
+.news-link {
+  display: block;
+  font-family: var(--font-ui) !important;
+  font-size: var(--f13) !important;
+  font-weight: 500 !important;
+  color: var(--text-body) !important;
+  text-decoration: none !important;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+.news-link:hover {
+  color: var(--text-hi) !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+}
+.news-source {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f9) !important; font-weight: 700 !important;
+  color: var(--green) !important;
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+.news-age { font-size: var(--f9) !important; color: var(--text-dim) !important; }
+.news-tag {
+  display: inline-block;
+  font-family: var(--font-ui) !important;
+  font-size: var(--f8) !important; font-weight: 600 !important;
+  padding: 0.02rem 0.28rem;
+  border: 1px solid var(--border2);
+  color: var(--text-dim) !important;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* ══ WATCHLIST ════════════════════════════════════════════════════════════════ */
+.wl-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.3rem 0.4rem; border-bottom: 1px solid var(--border);
+}
+.wl-ticker { color: var(--amber) !important; font-weight: 700 !important;
+             font-size: var(--f11); letter-spacing: 0.06em; min-width: 55px; }
+.wl-price  { color: var(--text-hi) !important; font-weight: 700 !important;
+             font-family: var(--font-data) !important;
+             font-size: var(--f11); text-align: right; min-width: 65px; }
+.wl-chg    { font-family: var(--font-data) !important;
+             font-size: var(--f10); text-align: right; min-width: 55px; font-weight: 600; }
+
+/* ══ CHAT ═════════════════════════════════════════════════════════════════════ */
+.chat-msg-user {
+  background: var(--bg2); border-left: 2px solid var(--amber);
+  padding: 0.45rem 0.7rem; margin: 0.25rem;
+  font-size: var(--f12); color: var(--text-body) !important; line-height: 1.5;
+}
+.chat-msg-ai {
+  background: var(--bg1); border-left: 2px solid var(--green);
+  padding: 0.45rem 0.7rem; margin: 0.25rem;
+  font-size: var(--f12); color: var(--text-body) !important; line-height: 1.5;
+}
+
+/* ══ EXPANDER ═════════════════════════════════════════════════════════════════ */
+.streamlit-expanderHeader {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f11) !important; font-weight: 600 !important;
+  background: var(--bg1) !important; color: var(--text-body) !important;
+  border-radius: 2px !important; border: 1px solid var(--border2) !important;
+}
+.streamlit-expanderContent {
+  background: var(--bg1) !important; border: 1px solid var(--border2) !important;
+  border-top: none !important;
+}
+
+/* ══ MISC ═════════════════════════════════════════════════════════════════════ */
+.stCaption, [data-testid="stCaptionContainer"] {
+  font-family: var(--font-ui) !important;
+  font-size: var(--f10) !important; color: var(--text-mid) !important;
+}
+.stAlert { font-family: var(--font-ui) !important; font-size: var(--f12) !important; }
+.stProgress > div > div { background: var(--green) !important; }
+.stNumberInput > div { border-radius: 2px !important; }
+.stNumberInput label {
+  font-family: var(--font-ui) !important; font-size: var(--f10) !important;
+  color: var(--text-mid) !important; text-transform: uppercase !important;
+}
+.ticker-tape {
+  background: var(--bg1); border-bottom: 1px solid var(--border2);
+  padding: 0.25rem 0.9rem;
+  font-family: var(--font-data); font-size: var(--f10);
+  color: var(--text-mid); white-space: nowrap; overflow: hidden;
+}
+
+/* ══ FORCE WHITE ON QUOTE SPANS — beat Streamlit catch-all !important ════════ */
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#FFFFFF"],
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#ffffff"],
+section[data-testid="stSidebar"] span[style*="color:#ffffff"] {
+  color: #FFFFFF !important; font-weight: 700 !important;
+}
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#FFB700"],
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#ffb700"],
+section[data-testid="stSidebar"] span[style*="color:#ffb700"],
+section[data-testid="stSidebar"] span[style*="color:#FFB700"] {
+  color: #FFB700 !important; font-weight: 700 !important;
+}
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#00FFAA"],
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#00ff"],
+section[data-testid="stSidebar"] span[style*="color:#00ff"] {
+  color: #00FFAA !important; font-weight: 600 !important;
+}
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#FF4444"],
+.stTabs [data-baseweb="tab-panel"] span[style*="color:#ff"] {
+  color: #FF4444 !important; font-weight: 600 !important;
+}
 [data-testid="stDecoration"] { display: none !important; }
 
 
@@ -420,36 +715,41 @@ for k, v in defaults.items():
 # CONSTANTS
 # ══════════════════════════════════════════════════════════════════════════════
 PLOTLY_BASE = dict(
-    paper_bgcolor="#000000",
-    plot_bgcolor="#000000",
-    font=dict(family="IBM Plex Mono, Menlo, Consolas, monospace", color="#555555", size=9),
+    paper_bgcolor="#0A0A0A",
+    plot_bgcolor="#0A0A0A",
+    font=dict(family="IBM Plex Mono, Menlo, Consolas, monospace",
+              color="#B0B0B0", size=11),
     xaxis=dict(
-        gridcolor="#111111",
-        linecolor="#1a1a1a",
-        zerolinecolor="#1a1a1a",
-        tickfont=dict(family="IBM Plex Mono, monospace", size=9, color="#555555"),
+        gridcolor="#1a1a1a",
+        linecolor="#252525",
+        zerolinecolor="#252525",
+        tickfont=dict(family="IBM Plex Mono, monospace", size=10, color="#808080"),
+        tickcolor="#252525",
         showgrid=True,
     ),
     yaxis=dict(
-        gridcolor="#111111",
-        linecolor="#1a1a1a",
-        zerolinecolor="#1a1a1a",
-        tickfont=dict(family="IBM Plex Mono, monospace", size=9, color="#555555"),
+        gridcolor="#1a1a1a",
+        linecolor="#252525",
+        zerolinecolor="#252525",
+        tickfont=dict(family="IBM Plex Mono, monospace", size=10, color="#808080"),
+        tickcolor="#252525",
         showgrid=True,
         side="right",
     ),
     legend=dict(
         bgcolor="rgba(0,0,0,0)",
-        bordercolor="#1a1a1a",
-        font=dict(family="IBM Plex Mono, monospace", size=9, color="#555555"),
+        bordercolor="#252525",
+        font=dict(family="Inter, sans-serif", size=11, color="#B0B0B0"),
     ),
     hoverlabel=dict(
-        bgcolor="#111111",
-        bordercolor="#1a1a1a",
-        font=dict(family="IBM Plex Mono, monospace", size=10, color="#cccccc"),
+        bgcolor="#141414",
+        bordercolor="#2a2a2a",
+        font=dict(family="IBM Plex Mono, monospace", size=11, color="#F0F0F0"),
     ),
-    margin=dict(l=0, r=55, t=24, b=24),
+    margin=dict(l=0, r=60, t=28, b=28),
     hovermode="x unified",
+    title=dict(font=dict(family="Inter, sans-serif", size=13,
+                         color="#F0F0F0"), x=0.01, xanchor="left"),
 )
 
 EQUITY_TICKERS = {
@@ -552,53 +852,85 @@ def add_overlays(fig, df: pd.DataFrame, overlays: list):
                           annotation_font_color=col)
     return fig
 
-def render_chart(ticker: str, period: str, interval: str, chart_type: str, overlays: list, section_name: str = "default"):
+def render_chart(ticker: str, period: str, interval: str, chart_type: str,
+                 overlays: list, section_name: str = "default",
+                 chart_slot=None):
+    """
+    Renders an OHLCV + volume subplot into `chart_slot` (a st.empty() container).
+    Passing a persistent st.empty() eliminates the white-gap / layout-shift that
+    occurs when Streamlit removes and re-adds the chart element on timeframe change.
+    Falls back to direct st.plotly_chart if no slot provided.
+    """
     df = fetch_ohlcv(ticker, period, interval)
     if df.empty or "Close" not in df.columns:
-        st.warning(f"No data available for {ticker}. Try a different timeframe or check the ticker symbol.")
+        msg = f"No data for **{ticker}** at {period}/{interval}. Try a different timeframe."
+        if chart_slot:
+            chart_slot.warning(msg)
+        else:
+            st.warning(msg)
         return
 
     layout = dict(**PLOTLY_BASE)
-    layout.update(height=480, showlegend=True)
-    layout["xaxis"]["rangeslider"] = {"visible": False}
+    layout.update(height=490, showlegend=True)
+    layout["xaxis"] = dict(layout.get("xaxis", {}), rangeslider={"visible": False})
+
+    G = "#00FFAA"   # green accent
+    R = "#FF4444"   # red accent
 
     if chart_type == "CANDLESTICK":
         fig = go.Figure()
         fig.add_trace(go.Candlestick(
-            x=df.index, open=df["Open"], high=df["High"], low=df["Low"], close=df["Close"],
-            name=ticker, increasing_line_color="#00ff41", decreasing_line_color="#ff1744",
-            increasing_fillcolor="#003a0e", decreasing_fillcolor="#3a0008",
+            x=df.index, open=df["Open"], high=df["High"],
+            low=df["Low"], close=df["Close"],
+            name=ticker,
+            increasing_line_color=G, decreasing_line_color=R,
+            increasing_fillcolor="#003a1a", decreasing_fillcolor="#2a0000",
+            line=dict(width=1),
         ))
     elif chart_type == "BAR":
-        colors = ["#00ff41" if r >= 0 else "#ff1744"
-                  for r in (df["Close"] - df["Open"])]
+        colors_bar = [G if r >= 0 else R for r in (df["Close"] - df["Open"])]
         fig = go.Figure()
         fig.add_trace(go.Bar(x=df.index, y=df["Close"], name=ticker,
-                             marker_color=colors, marker_line_width=0))
+                             marker_color=colors_bar, marker_line_width=0))
     else:  # LINE
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=df.index, y=df["Close"], mode="lines", name=ticker,
-            line=dict(color="#00ff41", width=1.5),
-            fill="tozeroy", fillcolor="rgba(0,255,65,0.04)"
+            line=dict(color=G, width=1.5),
+            fill="tozeroy", fillcolor="rgba(0,255,170,0.04)"
         ))
 
     fig = add_overlays(fig, df, overlays)
 
-    # Volume subplot
-    fig_full = make_subplots(rows=2, cols=1, shared_xaxes=True,
-                             row_heights=[0.78, 0.22], vertical_spacing=0.01)
+    # Volume subplot — share x-axis so zoom/pan is synchronised
+    fig_full = make_subplots(
+        rows=2, cols=1, shared_xaxes=True,
+        row_heights=[0.78, 0.22], vertical_spacing=0.008
+    )
     for trace in fig.data:
         fig_full.add_trace(trace, row=1, col=1)
-    vol_colors = ["#00aa2a" if c >= o else "#cc1133"
-                  for c, o in zip(df["Close"], df["Open"])]
-    fig_full.add_trace(go.Bar(x=df.index, y=df["Volume"], name="Volume",
-                              marker_color=vol_colors, marker_line_width=0,
-                              showlegend=False), row=2, col=1)
+    if "Volume" in df.columns:
+        vol_colors = [G if c >= o else R
+                      for c, o in zip(df["Close"], df["Open"])]
+        fig_full.add_trace(
+            go.Bar(x=df.index, y=df["Volume"], name="Vol",
+                   marker_color=vol_colors, marker_line_width=0,
+                   opacity=0.7, showlegend=False),
+            row=2, col=1
+        )
+
     fig_full.update_layout(**layout)
-    fig_full.update_xaxes(gridcolor="#0d0d0d", linecolor="#1a1a1a")
-    fig_full.update_yaxes(gridcolor="#0d0d0d", linecolor="#1a1a1a")
-    st.plotly_chart(fig_full, use_container_width=True, key=f"chart_main_{section_name}")
+    # Crisp grid — very dark lines, barely visible
+    fig_full.update_xaxes(gridcolor="#181818", linecolor="#252525",
+                          zeroline=False, showspikes=True,
+                          spikecolor="#404040", spikethickness=1)
+    fig_full.update_yaxes(gridcolor="#181818", linecolor="#252525",
+                          zeroline=False)
+
+    # ── Render into persistent slot to avoid white-gap on rerender ────────────
+    target = chart_slot if chart_slot else st
+    target.plotly_chart(fig_full, use_container_width=True,
+                        key=f"chart_main_{section_name}")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MACRO / ECONOMY PLACEHOLDER DATA
@@ -930,9 +1262,9 @@ with st.sidebar:
         st.markdown(
             f'<div style="display:flex;justify-content:space-between;align-items:center;'
             f'padding:0.28rem 0.3rem;border-bottom:1px solid #111;">'
-            f'<span style="font-size:10px;color:#ffb700!important;font-weight:700!important;letter-spacing:0.06em;">{wl_t}</span>'
-            f'<span style="font-size:10px;color:#ffffff!important;font-weight:700!important;">{price_s}</span>'
-            f'<span style="font-size:9px;color:{chg_col}!important;font-weight:600!important;">{pct_s}</span>'
+            f'<span style="font-size:11px;color:#FFB700!important;font-weight:700!important;letter-spacing:0.06em;font-family:IBM Plex Mono,monospace;">{wl_t}</span>'
+            f'<span style="font-size:11px;color:#FFFFFF!important;font-weight:700!important;font-family:IBM Plex Mono,monospace;">{price_s}</span>'
+            f'<span style="font-size:10px;color:{chg_col}!important;font-weight:700!important;font-family:IBM Plex Mono,monospace;">{pct_s}</span>'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -973,7 +1305,7 @@ with st.sidebar:
             f'<div style="display:flex;justify-content:space-between;'
             f'font-size:9px;padding:0.16rem 0.2rem;border-bottom:1px solid #0d0d0d;">'
             f'<span style="color:#555;">{label}</span>'
-            f'<span style="color:{val_col}!important;font-weight:700!important;">{val}</span></div>',
+            f'<span style="color:{val_col}!important;font-weight:700!important;font-family:IBM Plex Mono,monospace;font-size:10px;">{val}</span></div>',
             unsafe_allow_html=True,
         )
 
@@ -984,16 +1316,16 @@ now_str = datetime.datetime.utcnow().strftime("UTC %Y-%m-%d %H:%M")
 st.markdown(f"""
 <div class="top-bar">
   <div class="top-logo">▸ THE MARKET TERMINAL</div>
-  <div style="font-size:0.58rem;color:#333333;letter-spacing:0.08em;flex:1;padding:0 1.5rem;overflow:hidden;white-space:nowrap;">
-    S&P 500 <span style="color:#00ff41">5,614 ▲0.41%</span> &nbsp;|&nbsp;
-    NASDAQ <span style="color:#00ff41">17,890 ▲0.62%</span> &nbsp;|&nbsp;
-    DOW <span style="color:#ff1744">39,213 ▼0.08%</span> &nbsp;|&nbsp;
-    VIX <span style="color:#ffab00">18.24</span> &nbsp;|&nbsp;
-    10Y <span style="color:#ff1744">4.21%</span> &nbsp;|&nbsp;
-    DXY <span style="color:#ededed">103.82</span> &nbsp;|&nbsp;
-    GOLD <span style="color:#00ff41">$2,947</span> &nbsp;|&nbsp;
-    WTI <span style="color:#ededed">$78.14</span> &nbsp;|&nbsp;
-    BTC <span style="color:#00ff41">$88,420</span>
+  <div style="font-family:IBM Plex Mono,monospace;font-size:10px;color:#606060;letter-spacing:0.06em;flex:1;padding:0 1.5rem;overflow:hidden;white-space:nowrap;">
+    S&P 500 <span style="color:#00FFAA;font-weight:600;">5,614 ▲0.41%</span> &nbsp;·&nbsp;
+    NASDAQ <span style="color:#00FFAA;font-weight:600;">17,890 ▲0.62%</span> &nbsp;·&nbsp;
+    DOW <span style="color:#FF4444;font-weight:600;">39,213 ▼0.08%</span> &nbsp;·&nbsp;
+    VIX <span style="color:#FFB700;font-weight:600;">18.24</span> &nbsp;·&nbsp;
+    10Y <span style="color:#FF4444;font-weight:600;">4.21%</span> &nbsp;·&nbsp;
+    DXY <span style="color:#F0F0F0;font-weight:500;">103.82</span> &nbsp;·&nbsp;
+    GOLD <span style="color:#00FFAA;font-weight:600;">$2,947</span> &nbsp;·&nbsp;
+    WTI <span style="color:#F0F0F0;font-weight:500;">$78.14</span> &nbsp;·&nbsp;
+    BTC <span style="color:#00FFAA;font-weight:600;">$88,420</span>
   </div>
   <div class="top-time">{now_str}</div>
 </div>
@@ -1018,7 +1350,7 @@ def render_section(section_name: str, default_tickers: list):
 
     # ── CHARTS ──────────────────────────────────────────────────────────────
     with sub_tabs[0]:
-        # ── ROW 1: ticker input (left) + quick-pick (centre) ────────────────
+        # ── ROW 1: ticker input | quick-pick | overlays ──────────────────────
         row1a, row1b, row1c = st.columns([2, 2, 2])
         with row1a:
             custom_input = st.text_input(
@@ -1049,7 +1381,7 @@ def render_section(section_name: str, default_tickers: list):
         else:
             ticker = custom_input.strip().upper() if custom_input.strip() else default_tickers[0]
 
-        # ── ROW 2: chart type + timeframe buttons (full-width toolbar) ───────
+        # ── ROW 2: chart type + timeframe toolbar ─────────────────────────────
         tb1, tb2 = st.columns([1, 3])
         with tb1:
             chart_type = st.radio("TYPE", ["CANDLESTICK", "LINE", "BAR"],
@@ -1065,28 +1397,35 @@ def render_section(section_name: str, default_tickers: list):
             pct   = q.get("pct", 0)
             price = q.get("price", 0.0)
             chg   = q.get("chg", 0.0)
-            chg_col = "#00ff41" if pct >= 0 else "#ff3b3b"
+            chg_col = "#00FFAA" if pct >= 0 else "#FF4444"
             arrow   = "▲" if pct >= 0 else "▼"
             st.markdown(
-                f'<div style="display:flex;align-items:baseline;gap:0.9rem;'
-                f'padding:0.25rem 0.1rem;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">' 
-                f'<span style="font-size:13px;color:#ffb700!important;font-weight:700!important;letter-spacing:0.06em;">{ticker}</span>'
-                f'<span style="font-size:18px;color:#ffffff!important;font-weight:700!important;">{price:,.4f}</span>'
-                f'<span style="font-size:11px;color:{chg_col}!important;font-weight:600!important;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
-                f'<span style="font-size:9px;color:#333;margin-left:auto;">15-min delay · yfinance</span>'
+                f'<div style="display:flex;align-items:baseline;gap:1rem;'
+                f'padding:0.3rem 0.1rem;border-bottom:1px solid #202020;margin-bottom:0.15rem;'
+                f'font-family:IBM Plex Mono,monospace;">'
+                f'<span style="font-size:14px;color:#FFB700!important;font-weight:700!important;letter-spacing:0.08em;">{ticker}</span>'
+                f'<span style="font-size:22px;color:#FFFFFF!important;font-weight:700!important;letter-spacing:-0.01em;">{price:,.4f}</span>'
+                f'<span style="font-size:12px;color:{chg_col}!important;font-weight:600!important;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
+                f'<span style="font-size:10px;color:#404040;margin-left:auto;font-family:Inter,sans-serif;">15-min delay · yfinance</span>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
         else:
             st.markdown(
-                f'<div style="padding:0.2rem 0;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">'
-                f'<span style="font-size:11px;color:#ffb700;font-weight:600;">{ticker}</span>'
-                f'<span style="font-size:9px;color:#444;padding-left:0.6rem;">fetching…</span></div>',
+                f'<div style="padding:0.2rem 0;border-bottom:1px solid #202020;margin-bottom:0.15rem;">'
+                f'<span style="font-family:IBM Plex Mono,monospace;font-size:13px;color:#FFB700;font-weight:700;">{ticker}</span>'
+                f'<span style="font-size:10px;color:#444;padding-left:0.75rem;">fetching…</span></div>',
                 unsafe_allow_html=True,
             )
 
-        # ── ROW 4: full-width chart ────────────────────────────────────────
-        render_chart(ticker, period, interval, chart_type, overlays, section_name)
+        # ── ROW 4: persistent chart slot — eliminates white-gap on tf change ──
+        # st.empty() reserves a fixed DOM slot; updating it in place means
+        # Streamlit never unmounts/remounts the chart element.
+        chart_slot_key = f"chart_slot_{section_name}"
+        if chart_slot_key not in st.session_state:
+            st.session_state[chart_slot_key] = st.empty()
+        chart_slot = st.session_state[chart_slot_key]
+        render_chart(ticker, period, interval, chart_type, overlays, section_name, chart_slot)
 
     # ── SCREENER ──────────────────────────────────────────────────────────────
     with sub_tabs[1]:
@@ -1352,26 +1691,30 @@ with tabs[2]:  # RATES
         _rt_q = fetch_quote(_rt_ticker)
         if _rt_q:
             _rp = _rt_q.get("price", 0.0); _rc = _rt_q.get("chg", 0.0); _rpct = _rt_q.get("pct", 0)
-            _rcol = "#00ff41" if _rpct >= 0 else "#ff3b3b"
+            _rcol = "#00FFAA" if _rpct >= 0 else "#FF4444"
             _rarrow = "▲" if _rpct >= 0 else "▼"
             st.markdown(
-                f'<div style="display:flex;align-items:baseline;gap:0.9rem;'
-                f'padding:0.25rem 0.1rem;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">'
-                f'<span style="font-size:13px;color:#ffb700!important;font-weight:700!important;">{_rt_ticker}</span>'
-                f'<span style="font-size:18px;color:#ffffff!important;font-weight:700!important;">{_rp:,.4f}</span>'
-                f'<span style="font-size:11px;color:{_rcol}!important;font-weight:600!important;">{_rarrow} {_rc:+.4f} ({_rpct:+.2f}%)</span>'
-                f'<span style="font-size:9px;color:#333;margin-left:auto;">15-min delay · yfinance</span>'
+                f'<div style="display:flex;align-items:baseline;gap:1rem;'
+                f'padding:0.3rem 0.1rem;border-bottom:1px solid #202020;margin-bottom:0.15rem;'
+                f'font-family:IBM Plex Mono,monospace;">'
+                f'<span style="font-size:14px;color:#FFB700!important;font-weight:700!important;letter-spacing:0.08em;">{_rt_ticker}</span>'
+                f'<span style="font-size:22px;color:#FFFFFF!important;font-weight:700!important;">{_rp:,.4f}</span>'
+                f'<span style="font-size:12px;color:{_rcol}!important;font-weight:600!important;">{_rarrow} {_rc:+.4f} ({_rpct:+.2f}%)</span>'
+                f'<span style="font-size:10px;color:#404040;margin-left:auto;font-family:Inter,sans-serif;">15-min delay · yfinance</span>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
         else:
             st.markdown(
-                f'<div style="padding:0.2rem 0;border-bottom:1px solid #1e1e1e;margin-bottom:0.2rem;">'
-                f'<span style="font-size:11px;color:#ffb700;font-weight:600;">{_rt_ticker}</span>'
-                f'<span style="font-size:9px;color:#444;padding-left:0.6rem;">fetching…</span></div>',
+                f'<div style="padding:0.2rem 0;border-bottom:1px solid #202020;margin-bottom:0.15rem;">'
+                f'<span style="font-family:IBM Plex Mono,monospace;font-size:13px;color:#FFB700;font-weight:700;">{_rt_ticker}</span>'
+                f'<span style="font-size:10px;color:#444;padding-left:0.75rem;">fetching…</span></div>',
                 unsafe_allow_html=True,
             )
-        render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays, "RATES")
+        if "rates_chart_slot" not in st.session_state:
+            st.session_state["rates_chart_slot"] = st.empty()
+        render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays, "RATES",
+                     st.session_state["rates_chart_slot"])
     with rates_tabs[1]:
         st.markdown('<div class="bb-section">US TREASURY YIELD CURVE</div>', unsafe_allow_html=True)
         maturities = ["1M","3M","6M","1Y","2Y","3Y","5Y","7Y","10Y","20Y","30Y"]
