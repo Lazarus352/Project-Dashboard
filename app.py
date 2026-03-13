@@ -852,30 +852,19 @@ def add_overlays(fig, df: pd.DataFrame, overlays: list):
                           annotation_font_color=col)
     return fig
 
-def render_chart(ticker: str, period: str, interval: str, chart_type: str,
-                 overlays: list, section_name: str = "default",
-                 chart_slot=None):
-    """
-    Renders an OHLCV + volume subplot into `chart_slot` (a st.empty() container).
-    Passing a persistent st.empty() eliminates the white-gap / layout-shift that
-    occurs when Streamlit removes and re-adds the chart element on timeframe change.
-    Falls back to direct st.plotly_chart if no slot provided.
-    """
+def build_chart_figure(ticker: str, period: str, interval: str,
+                       chart_type: str, overlays: list) -> go.Figure | None:
+    """Build and return the Plotly figure. Returns None if no data."""
     df = fetch_ohlcv(ticker, period, interval)
     if df.empty or "Close" not in df.columns:
-        msg = f"No data for **{ticker}** at {period}/{interval}. Try a different timeframe."
-        if chart_slot:
-            chart_slot.warning(msg)
-        else:
-            st.warning(msg)
-        return
+        return None
 
     layout = dict(**PLOTLY_BASE)
     layout.update(height=490, showlegend=True)
     layout["xaxis"] = dict(layout.get("xaxis", {}), rangeslider={"visible": False})
 
-    G = "#00FFAA"   # green accent
-    R = "#FF4444"   # red accent
+    G = "#00FF88"   # gain green
+    R = "#FF4D4D"   # loss red
 
     if chart_type == "CANDLESTICK":
         fig = go.Figure()
@@ -897,12 +886,11 @@ def render_chart(ticker: str, period: str, interval: str, chart_type: str,
         fig.add_trace(go.Scatter(
             x=df.index, y=df["Close"], mode="lines", name=ticker,
             line=dict(color=G, width=1.5),
-            fill="tozeroy", fillcolor="rgba(0,255,170,0.04)"
+            fill="tozeroy", fillcolor="rgba(0,255,136,0.04)"
         ))
 
     fig = add_overlays(fig, df, overlays)
 
-    # Volume subplot — share x-axis so zoom/pan is synchronised
     fig_full = make_subplots(
         rows=2, cols=1, shared_xaxes=True,
         row_heights=[0.78, 0.22], vertical_spacing=0.008
@@ -920,17 +908,45 @@ def render_chart(ticker: str, period: str, interval: str, chart_type: str,
         )
 
     fig_full.update_layout(**layout)
-    # Crisp grid — very dark lines, barely visible
     fig_full.update_xaxes(gridcolor="#181818", linecolor="#252525",
                           zeroline=False, showspikes=True,
                           spikecolor="#404040", spikethickness=1)
     fig_full.update_yaxes(gridcolor="#181818", linecolor="#252525",
                           zeroline=False)
+    return fig_full
 
-    # ── Render into persistent slot to avoid white-gap on rerender ────────────
-    target = chart_slot if chart_slot else st
-    target.plotly_chart(fig_full, use_container_width=True,
-                        key=f"chart_main_{section_name}")
+
+def render_chart(ticker: str, period: str, interval: str, chart_type: str,
+                 overlays: list, section_name: str = "default",
+                 chart_slot=None):
+    """
+    Gap-free chart rendering.
+
+    Strategy: store the built figure in session_state under a stable key,
+    then emit st.plotly_chart with that SAME stable key every run.
+    Streamlit detects the matching key and patches the existing DOM element
+    in-place rather than removing + re-adding it — this eliminates the
+    white flash / layout gap that occurs on timeframe / ticker changes.
+    """
+    fig_key = f"fig_{section_name}"
+    chart_key = f"chart_main_{section_name}"
+
+    fig = build_chart_figure(ticker, period, interval, chart_type, overlays)
+    if fig is None:
+        msg = f"No data for **{ticker}** ({period}/{interval}). Try a different timeframe."
+        st.warning(msg)
+        return
+
+    # Persist figure so it survives reruns triggered by OTHER widgets
+    st.session_state[fig_key] = fig
+
+    # Always render from session_state so the key is stable and Streamlit
+    # patches the element rather than replacing it.
+    st.plotly_chart(
+        st.session_state[fig_key],
+        use_container_width=True,
+        key=chart_key,
+    )
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MACRO / ECONOMY PLACEHOLDER DATA
@@ -1255,7 +1271,7 @@ with st.sidebar:
         q       = wl_quotes.get(wl_t, {})
         price   = q.get("price", None)
         pct     = q.get("pct", 0)
-        chg_col = "#00ff41" if pct >= 0 else "#ff3b3b"
+        chg_col = "#00FF88" if pct >= 0 else "#FF4D4D"
         arrow   = "▲" if pct >= 0 else "▼"
         price_s = f"{price:,.2f}" if price is not None else "—"
         pct_s   = f"{arrow} {abs(pct):.2f}%" if price is not None else "—"
@@ -1300,7 +1316,7 @@ with st.sidebar:
         ("VIX",          "18.2",       ""),
     ]
     for label, val, direction in macro_snap:
-        val_col = "#00ff41" if direction == "up" else ("#ff3b3b" if direction == "dn" else "#ffffff")
+        val_col = "#00FF88" if direction == "up" else ("#FF4D4D" if direction == "dn" else "#F0F0F0")
         st.markdown(
             f'<div style="display:flex;justify-content:space-between;'
             f'font-size:9px;padding:0.16rem 0.2rem;border-bottom:1px solid #0d0d0d;">'
@@ -1394,18 +1410,18 @@ def render_section(section_name: str, default_tickers: list):
         period, interval = TIMEFRAMES[tf]
         q = fetch_quote(ticker)
         if q:
-            pct   = q.get("pct", 0)
-            price = q.get("price", 0.0)
-            chg   = q.get("chg", 0.0)
-            chg_col = "#00FFAA" if pct >= 0 else "#FF4444"
+            pct     = q.get("pct", 0)
+            price   = q.get("price", 0.0)
+            pct_col = "#00FF88" if pct >= 0 else "#FF4D4D"
             arrow   = "▲" if pct >= 0 else "▼"
+            pct_str = f"{arrow} {abs(pct):.1f}%"
             st.markdown(
                 f'<div style="display:flex;align-items:baseline;gap:1rem;'
                 f'padding:0.3rem 0.1rem;border-bottom:1px solid #202020;margin-bottom:0.15rem;'
                 f'font-family:IBM Plex Mono,monospace;">'
                 f'<span style="font-size:14px;color:#FFB700!important;font-weight:700!important;letter-spacing:0.08em;">{ticker}</span>'
                 f'<span style="font-size:22px;color:#FFFFFF!important;font-weight:700!important;letter-spacing:-0.01em;">{price:,.4f}</span>'
-                f'<span style="font-size:12px;color:{chg_col}!important;font-weight:600!important;">{arrow} {chg:+.4f} ({pct:+.2f}%)</span>'
+                f'<span style="font-size:13px;color:{pct_col}!important;font-weight:700!important;">{pct_str}</span>'
                 f'<span style="font-size:10px;color:#404040;margin-left:auto;font-family:Inter,sans-serif;">15-min delay · yfinance</span>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -1418,14 +1434,8 @@ def render_section(section_name: str, default_tickers: list):
                 unsafe_allow_html=True,
             )
 
-        # ── ROW 4: persistent chart slot — eliminates white-gap on tf change ──
-        # st.empty() reserves a fixed DOM slot; updating it in place means
-        # Streamlit never unmounts/remounts the chart element.
-        chart_slot_key = f"chart_slot_{section_name}"
-        if chart_slot_key not in st.session_state:
-            st.session_state[chart_slot_key] = st.empty()
-        chart_slot = st.session_state[chart_slot_key]
-        render_chart(ticker, period, interval, chart_type, overlays, section_name, chart_slot)
+        # ── ROW 4: chart — stable key= means Streamlit patches in-place, no gap ──
+        render_chart(ticker, period, interval, chart_type, overlays, section_name)
 
     # ── SCREENER ──────────────────────────────────────────────────────────────
     with sub_tabs[1]:
@@ -1437,7 +1447,6 @@ def render_section(section_name: str, default_tickers: list):
                 rows.append({
                     "Ticker": t,
                     "Price":  q.get("price", "—"),
-                    "Chg":    q.get("chg", 0),
                     "Chg %":  q.get("pct", 0),
                 })
             if rows:
@@ -1445,13 +1454,13 @@ def render_section(section_name: str, default_tickers: list):
 
                 def color_pct(val):
                     if isinstance(val, (int, float)):
-                        return "color: #00ff41" if val >= 0 else "color: #ff1744"
+                        return f"color: {'#00FF88' if val >= 0 else '#FF4D4D'}; font-weight: 700"
                     return ""
 
                 st.dataframe(
                     df_sc.style
-                        .format({"Price": "{:.4f}", "Chg": "{:+.4f}", "Chg %": "{:+.2f}%"})
-                        .map(color_pct, subset=["Chg %", "Chg"]),
+                        .format({"Price": "{:.4f}", "Chg %": lambda v: f"{'▲' if v>=0 else '▼'} {abs(v):.1f}%"})
+                        .map(color_pct, subset=["Chg %"]),
                     use_container_width=True, hide_index=True, height=400
                 )
         else:
@@ -1690,16 +1699,17 @@ with tabs[2]:  # RATES
         _rt_period, _rt_interval = TIMEFRAMES[_rt_tf]
         _rt_q = fetch_quote(_rt_ticker)
         if _rt_q:
-            _rp = _rt_q.get("price", 0.0); _rc = _rt_q.get("chg", 0.0); _rpct = _rt_q.get("pct", 0)
-            _rcol = "#00FFAA" if _rpct >= 0 else "#FF4444"
-            _rarrow = "▲" if _rpct >= 0 else "▼"
+            _rp = _rt_q.get("price", 0.0); _rpct = _rt_q.get("pct", 0)
+            _rcol  = "#00FF88" if _rpct >= 0 else "#FF4D4D"
+            _arrow = "▲" if _rpct >= 0 else "▼"
+            _pct_str = f"{_arrow} {abs(_rpct):.1f}%"
             st.markdown(
                 f'<div style="display:flex;align-items:baseline;gap:1rem;'
                 f'padding:0.3rem 0.1rem;border-bottom:1px solid #202020;margin-bottom:0.15rem;'
                 f'font-family:IBM Plex Mono,monospace;">'
                 f'<span style="font-size:14px;color:#FFB700!important;font-weight:700!important;letter-spacing:0.08em;">{_rt_ticker}</span>'
                 f'<span style="font-size:22px;color:#FFFFFF!important;font-weight:700!important;">{_rp:,.4f}</span>'
-                f'<span style="font-size:12px;color:{_rcol}!important;font-weight:600!important;">{_rarrow} {_rc:+.4f} ({_rpct:+.2f}%)</span>'
+                f'<span style="font-size:13px;color:{_rcol}!important;font-weight:700!important;">{_pct_str}</span>'
                 f'<span style="font-size:10px;color:#404040;margin-left:auto;font-family:Inter,sans-serif;">15-min delay · yfinance</span>'
                 f'</div>',
                 unsafe_allow_html=True,
@@ -1711,10 +1721,7 @@ with tabs[2]:  # RATES
                 f'<span style="font-size:10px;color:#444;padding-left:0.75rem;">fetching…</span></div>',
                 unsafe_allow_html=True,
             )
-        if "rates_chart_slot" not in st.session_state:
-            st.session_state["rates_chart_slot"] = st.empty()
-        render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays, "RATES",
-                     st.session_state["rates_chart_slot"])
+        render_chart(_rt_ticker, _rt_period, _rt_interval, _rt_chart_type, _rt_overlays, "RATES")
     with rates_tabs[1]:
         st.markdown('<div class="bb-section">US TREASURY YIELD CURVE</div>', unsafe_allow_html=True)
         maturities = ["1M","3M","6M","1Y","2Y","3Y","5Y","7Y","10Y","20Y","30Y"]
